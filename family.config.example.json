@@ -1,0 +1,33 @@
+{
+  "_instructions": "Copy this file to family.config.json and edit it. family.config.json is gitignored — your personal data stays local.",
+
+  "library": {
+    "name":     "My Family Library",
+    "subtitle": "Our book collection"
+  },
+
+  "owners": [
+    {
+      "_note":     "The shared / catch-all owner. isDefault:true = appears first in every dropdown.",
+      "name":      "Everyone",
+      "home":      "Home",
+      "isDefault": true
+    },
+    { "name": "Alice", "home": "Alice's apartment" },
+    { "name": "Bob",   "home": "Bob's apartment"   },
+    {
+      "_note":   "Fallback owner. isOther:true = appears last in dropdowns.",
+      "name":    "Other",
+      "home":    null,
+      "isOther": true
+    }
+  ],
+
+  "reviewers": [
+    {
+      "_note": "Colors — bg: chip background, text: chip text, dot: accent dot. Light pastels work best.",
+      "name":  "Alice", "color": { "bg": "#dbeafe", "text": "#1d4ed8", "dot": "#3b82f6" }
+    },
+    { "name": "Bob",   "color": { "bg": "#dcfce7", "text": "#15803d", "dot": "#22c55e" } }
+  ]
+}
