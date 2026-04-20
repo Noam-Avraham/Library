@@ -126,7 +126,7 @@ export default function App() {
           sortBy={sortBy}
           onSortChange={setSortBy}
         />
-        <main className="max-w-7xl mx-auto px-6 py-8">
+        <main className="max-w-7xl mx-auto px-2 sm:px-6 py-4 sm:py-8">
           <BookshelfView
             books={sortedBooks}
             loading={loading}
