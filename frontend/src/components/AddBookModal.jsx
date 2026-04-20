@@ -29,13 +29,13 @@ function BookCover({ thumbnailUrl, isbn, title }) {
 
   if (!src && !fallback) {
     return (
-      <div className="book-placeholder w-10 h-14 flex-shrink-0 rounded overflow-hidden flex items-center justify-center">
+      <div className="book-placeholder w-10 h-14 flex-shrink-0  overflow-hidden flex items-center justify-center">
         <span className="text-white text-sm font-bold">{title?.charAt(0)}</span>
       </div>
     );
   }
   return (
-    <div className="w-10 h-14 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+    <div className="w-10 h-14 flex-shrink-0  overflow-hidden bg-gray-100">
       <img
         src={src || fallback}
         alt={title}
@@ -50,7 +50,7 @@ function SearchResult({ item, onSelect }) {
   const badge = SOURCE_LABEL[item.source] || SOURCE_LABEL.google;
   return (
     <div
-      className="flex items-center gap-3 p-2 hover:bg-indigo-50 rounded-lg cursor-pointer group"
+      className="flex items-center gap-3 p-2 hover:bg-indigo-50  cursor-pointer group"
       onClick={() => onSelect(item)}
     >
       <BookCover thumbnailUrl={item.thumbnailUrl} isbn={item.isbn} title={item.title} />
@@ -62,8 +62,8 @@ function SearchResult({ item, onSelect }) {
         )}
         <div className="flex gap-2 mt-0.5 items-center">
           {item.publishedDate && <span className="text-xs text-gray-400">{item.publishedDate.slice(0,4)}</span>}
-          {item.language && <span className="text-xs text-gray-400 bg-gray-100 px-1 rounded">{item.language}</span>}
-          <span className={`text-xs px-1.5 rounded font-medium ${badge.cls}`}>{badge.text}</span>
+          {item.language && <span className="text-xs text-gray-400 bg-gray-100 px-1 ">{item.language}</span>}
+          <span className={`text-xs px-1.5  font-medium ${badge.cls}`}>{badge.text}</span>
         </div>
       </div>
       <span className="text-xs text-indigo-600 font-medium group-hover:underline flex-shrink-0">בחר</span>
@@ -164,7 +164,7 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto pointer-events-auto">
+            <div className="bg-white  shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto pointer-events-auto">
               {/* Header */}
               <div className="flex items-center justify-between p-5 border-b border-gray-100">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -178,7 +178,7 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
                 <div className="p-5">
                   <button
                     onClick={handleManual}
-                    className="w-full mb-4 flex items-center justify-center gap-2 border-2 border-dashed border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-600 font-medium py-2.5 rounded-xl text-sm transition-colors"
+                    className="w-full mb-4 flex items-center justify-center gap-2 border-2 border-dashed border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-600 font-medium py-2.5  text-sm transition-colors"
                   >
                     <span>✏️</span>
                     <span>הוסף ספר ידנית (ללא חיפוש)</span>
@@ -196,13 +196,13 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
                       value={query}
                       onChange={e => setQuery(e.target.value)}
                       placeholder="שם ספר, מחבר, ISBN..."
-                      className="flex-1 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                      className="flex-1 border border-gray-200  px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
                       autoFocus
                     />
                     <button
                       type="submit"
                       disabled={searching || !query.trim()}
-                      className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+                      className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white font-semibold px-5 py-2.5  text-sm transition-colors"
                     >
                       {searching ? '...' : 'חפש'}
                     </button>
@@ -246,8 +246,8 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
                 <form onSubmit={handleSave} className="p-5 space-y-4">
                   {/* Cover preview */}
                   {form.thumbnailUrl && (
-                    <div className="flex gap-4 items-start bg-amber-50 p-3 rounded-xl">
-                      <img src={form.thumbnailUrl} alt="" className="w-16 h-22 object-cover rounded-lg shadow"
+                    <div className="flex gap-4 items-start bg-amber-50 p-3 ">
+                      <img src={form.thumbnailUrl} alt="" className="w-16 h-22 object-cover  shadow"
                         onError={e => e.target.style.display = 'none'} />
                       <div>
                         <p className="font-bold text-gray-800 text-sm">{form.title}</p>
@@ -261,14 +261,14 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
                       <span className="text-sm font-medium text-gray-700">שם הספר *</span>
                       <input required value={form.title}
                         onChange={e => set('title', e.target.value)}
-                        className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+                        className="mt-1 w-full border border-gray-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
                     </label>
 
                     <label className="block">
                       <span className="text-sm font-medium text-gray-700">מחבר</span>
                       <input value={form.author}
                         onChange={e => set('author', e.target.value)}
-                        className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+                        className="mt-1 w-full border border-gray-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
                     </label>
 
                     <label className="block">
@@ -276,7 +276,7 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
                       <input value={form.translator}
                         onChange={e => set('translator', e.target.value)}
                         placeholder="שם המתרגם (אופציונלי)"
-                        className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+                        className="mt-1 w-full border border-gray-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
                     </label>
 
                     <div className="grid grid-cols-2 gap-3">
@@ -284,7 +284,7 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
                         <span className="text-sm font-medium text-gray-700">בעלים *</span>
                         <select required value={form.owner}
                           onChange={e => set('owner', e.target.value)}
-                          className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+                          className="mt-1 w-full border border-gray-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
                           <option value="">בחר...</option>
                           {members.map(m => (
                             <option key={m.id} value={m.name}>{m.name}</option>
@@ -296,7 +296,7 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
                         <span className="text-sm font-medium text-gray-700">סטטוס</span>
                         <select value={form.status}
                           onChange={e => set('status', e.target.value)}
-                          className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+                          className="mt-1 w-full border border-gray-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
                           {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </label>
@@ -308,14 +308,14 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
                         <input value={form.current_holder || ''}
                           onChange={e => set('current_holder', e.target.value)}
                           placeholder="שם המחזיק..."
-                          className="mt-1 w-full border border-orange-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 bg-orange-50" />
+                          className="mt-1 w-full border border-orange-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 bg-orange-50" />
                       </label>
                     )}
 
                     <label className="block">
                       <span className="text-sm font-medium text-gray-700">ז'אנר</span>
                       <select value={form.genre || ''} onChange={e => set('genre', e.target.value)}
-                        className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+                        className="mt-1 w-full border border-gray-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
                         <option value="">ללא ז'אנר</option>
                         {form.genre && !GENRES.includes(form.genre) && (
                           <option value={form.genre}>{form.genre}</option>
@@ -328,7 +328,7 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
                       <span className="text-sm font-medium text-gray-700">מיקום</span>
                       <select value={form.location}
                         onChange={e => set('location', e.target.value)}
-                        className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+                        className="mt-1 w-full border border-gray-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
                         {locationOptions().map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                     </label>
@@ -338,17 +338,17 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
                       <input value={form.thumbnailUrl}
                         onChange={e => set('thumbnailUrl', e.target.value)}
                         placeholder="https://..."
-                        className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 font-mono text-xs" />
+                        className="mt-1 w-full border border-gray-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 font-mono text-xs" />
                     </label>
                   </div>
 
                   <div className="flex gap-3 pt-2">
                     <button type="button" onClick={() => setStep('search')}
-                      className="flex-1 border border-gray-200 text-gray-600 font-medium py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors">
+                      className="flex-1 border border-gray-200 text-gray-600 font-medium py-2.5  text-sm hover:bg-gray-50 transition-colors">
                       חזור
                     </button>
                     <button type="submit" disabled={saving}
-                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold py-2.5  text-sm transition-colors">
                       {saving ? 'שומר...' : 'שמור ספר'}
                     </button>
                   </div>

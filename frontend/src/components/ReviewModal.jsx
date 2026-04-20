@@ -87,7 +87,7 @@ export default function ReviewModal({ open, book, existingReview, onClose, onSav
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.92, opacity: 0, y: 16 }}
             transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-            className="rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            className=" shadow-2xl w-full max-w-sm overflow-hidden"
             style={{ background: '#1a1040', border: '1px solid rgba(180,130,30,0.3)' }}
             dir="rtl"
           >
@@ -96,8 +96,8 @@ export default function ReviewModal({ open, book, existingReview, onClose, onSav
               style={{ borderColor: 'rgba(180,130,30,0.2)' }}>
               <div className="flex items-center gap-3">
                 {book?.thumbnailUrl
-                  ? <img src={book.thumbnailUrl} alt="" className="w-9 h-13 object-cover rounded shadow" />
-                  : <div className="w-9 h-12 rounded bg-indigo-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{book?.title?.[0]}</div>
+                  ? <img src={book.thumbnailUrl} alt="" className="w-9 h-13 object-cover  shadow" />
+                  : <div className="w-9 h-12  bg-indigo-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{book?.title?.[0]}</div>
                 }
                 <div>
                   <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: '#f5e6cc' }}>{book?.title}</p>
@@ -148,7 +148,7 @@ export default function ReviewModal({ open, book, existingReview, onClose, onSav
                         key={u}
                         type="button"
                         onClick={() => setUserName(selected ? '' : u)}
-                        className="py-2 rounded-xl text-sm font-bold transition-all"
+                        className="py-2  text-sm font-bold transition-all"
                         style={selected
                           ? { background: uc.active, color: 'white', boxShadow: `0 0 0 2px ${uc.active}44` }
                           : { background: 'rgba(255,255,255,0.06)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)' }
@@ -197,7 +197,7 @@ export default function ReviewModal({ open, book, existingReview, onClose, onSav
                         onChange={e => setReviewText(e.target.value)}
                         rows={3}
                         placeholder="מה חשבת על הספר? (אופציונלי)"
-                        className="w-full rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none"
+                        className="w-full  px-3 py-2.5 text-sm resize-none focus:outline-none"
                         style={{
                           background: 'rgba(255,255,255,0.07)',
                           border: '1px solid rgba(255,255,255,0.15)',
@@ -212,7 +212,7 @@ export default function ReviewModal({ open, book, existingReview, onClose, onSav
               <button
                 type="submit"
                 disabled={!userName || saving}
-                className="w-full py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-30"
+                className="w-full py-3  font-bold text-sm transition-all disabled:opacity-30"
                 style={{ background: c ? `linear-gradient(135deg, ${c.active}, ${c.active}cc)` : 'linear-gradient(135deg, #d97706, #b45309)', color: 'white' }}
               >
                 {saveLabel}

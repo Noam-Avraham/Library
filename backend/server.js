@@ -282,7 +282,9 @@ app.get('/api/reviews/summary', (req, res) => {
     SELECT book_id,
            COUNT(*) as read_count,
            AVG(CASE WHEN rating IS NOT NULL THEN rating END) as avg_rating,
-           GROUP_CONCAT(user_name, ',') as readers
+           GROUP_CONCAT(user_name, ',') as readers,
+           MAX(CASE WHEN rating IS NOT NULL THEN 1 ELSE 0 END) as has_rating,
+           MAX(CASE WHEN review_text IS NOT NULL AND review_text != '' THEN 1 ELSE 0 END) as has_review
     FROM reviews
     WHERE is_read = 1
     GROUP BY book_id
@@ -326,6 +328,80 @@ app.get('/api/stats', (req, res) => {
   const wishlist    = all("SELECT * FROM books WHERE status = 'רשימת משאלות' ORDER BY id DESC");
   const recent      = all('SELECT * FROM books ORDER BY id DESC LIMIT 8');
   res.json({ total, byStatus, byOwner, byLocation, byGenre, onLoan, wishlist, recent });
+});
+
+// ── Next Book Recommendation ─────────────────────────────────────────────────
+app.get('/api/next-book', async (req, res) => {
+  const { user_name } = req.query;
+  if (!user_name) return res.status(400).json({ error: 'user_name required' });
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
+
+  // Fetch only what Claude needs — lean fields, no thumbnails/ISBNs
+  const readBooks = all(`
+    SELECT b.title, b.author, b.genre, r.rating, r.review_text
+    FROM reviews r JOIN books b ON r.book_id = b.id
+    WHERE r.user_name = ? AND r.is_read = 1
+    ORDER BY r.rating DESC NULLS LAST
+  `, [user_name]);
+
+  const unreadBooks = all(`
+    SELECT b.id, b.title, b.author, b.genre, b.thumbnailUrl
+    FROM books b
+    WHERE b.id NOT IN (
+      SELECT book_id FROM reviews WHERE user_name = ? AND is_read = 1
+    )
+    AND b.status != 'רשימת משאלות'
+  `, [user_name]);
+
+  if (readBooks.length === 0)
+    return res.json({ recommendations: [], reason: 'no_history' });
+
+  if (unreadBooks.length === 0)
+    return res.json({ recommendations: [], reason: 'all_read' });
+
+  const readList = readBooks.map(b =>
+    `- "${b.title}"${b.author ? ` / ${b.author}` : ''}${b.genre ? ` [${b.genre}]` : ''}${b.rating ? ` — ${b.rating}/5` : ''}${b.review_text ? `: "${b.review_text}"` : ''}`
+  ).join('\n');
+
+  const unreadList = unreadBooks.map((b, i) =>
+    `${i}: "${b.title}"${b.author ? ` / ${b.author}` : ''}${b.genre ? ` [${b.genre}]` : ''}`
+  ).join('\n');
+
+  const client = new Anthropic({ apiKey });
+  try {
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      messages: [{
+        role: 'user',
+        content: `You are a personal librarian. Based on the reading history below, recommend up to 5 books from the available list that this reader would enjoy most.
+
+BOOKS THIS PERSON HAS READ (with ratings and reviews):
+${readList}
+
+AVAILABLE UNREAD BOOKS (with index numbers):
+${unreadList}
+
+Return ONLY a JSON array, no other text:
+[{"index": <number from available list>, "reason": "<one sentence in Hebrew explaining why they'd enjoy it>"}]
+
+Pick the best matches based on genres, authors, themes, and their ratings/reviews. Return at most 5.`,
+      }],
+    });
+
+    const raw = message.content[0]?.text || '[]';
+    const match = raw.match(/\[[\s\S]*\]/);
+    const picks = match ? JSON.parse(match[0]) : [];
+    const recommendations = picks
+      .filter(p => p.index >= 0 && p.index < unreadBooks.length)
+      .map(p => ({ ...unreadBooks[p.index], reason: p.reason }));
+
+    res.json({ recommendations, reason: 'ok' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Shelf Photo Scanner ──────────────────────────────────────────────────────

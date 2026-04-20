@@ -24,7 +24,7 @@ function BookCover({ thumbnailUrl, title }) {
     return <img src={thumbnailUrl} alt={title} onError={() => setErr(true)} className="w-full h-full object-cover" />;
   }
   return (
-    <div className="w-full h-full flex items-center justify-center rounded"
+    <div className="w-full h-full flex items-center justify-center "
       style={{ background: 'linear-gradient(135deg,#4338ca,#1e3a8a)' }}>
       <span className="text-white text-xl font-bold">{title?.[0] || '?'}</span>
     </div>
@@ -58,7 +58,7 @@ export default function ReviewsPage() {
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState('');
   const [filterUser, setFilterUser] = useState('');
-  const [filterUnread, setFilterUnread] = useState(false);
+  const [filterMode, setFilterMode] = useState(''); // '' | 'rated' | 'reviewed'
   const [expandedBook, setExpandedBook] = useState(null);
   const [reviewModal, setReviewModal]   = useState(null);
 
@@ -100,19 +100,23 @@ export default function ReviewsPage() {
     await load();
   }
 
-  const filtered = books.filter(book => {
-    if (search && !book.title.includes(search) && !(book.author || '').includes(search)) return false;
-    const s = summary[book.id];
-    if (filterUser) {
-      const readers = s?.readers ? s.readers.split(',') : [];
-      if (!readers.includes(filterUser)) return false;
-    }
-    if (filterUnread) {
-      const readers = s?.readers ? s.readers.split(',').filter(Boolean) : [];
-      if (readers.length === USERS.length) return false;
-    }
-    return true;
-  });
+  const filtered = books
+    .filter(book => {
+      if (search && !book.title.includes(search) && !(book.author || '').includes(search)) return false;
+      const s = summary[book.id];
+      if (filterUser) {
+        const readers = s?.readers ? s.readers.split(',') : [];
+        if (!readers.includes(filterUser)) return false;
+      }
+      if (filterMode === 'rated')    return s?.has_rating;
+      if (filterMode === 'reviewed') return s?.has_review;
+      return true;
+    })
+    .sort((a, b) => {
+      const ra = summary[a.id]?.avg_rating ? Number(summary[a.id].avg_rating) : -1;
+      const rb = summary[b.id]?.avg_rating ? Number(summary[b.id].avg_rating) : -1;
+      return rb - ra;
+    });
 
   const totalRead = Object.values(summary).reduce((acc, s) => acc + (s.read_count || 0), 0);
 
@@ -127,7 +131,7 @@ export default function ReviewsPage() {
           ).length;
           const c = USER_COLOR[u] || {};
           return (
-            <div key={u} className="flex items-center gap-2 px-4 py-2 rounded-xl shadow-sm"
+            <div key={u} className="flex items-center gap-2 px-4 py-2  shadow-sm"
               style={{ background: 'white', border: `1.5px solid ${c.dot || '#e5e7eb'}` }}>
               <span className="w-3 h-3 rounded-full" style={{ background: c.dot }} />
               <span className="font-bold text-sm" style={{ color: '#1a1040' }}>{u}</span>
@@ -146,28 +150,31 @@ export default function ReviewsPage() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="חיפוש ספר..."
-          className="rounded-xl px-4 py-2 text-sm flex-1 min-w-40 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          className=" px-4 py-2 text-sm flex-1 min-w-40 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
           style={{ background: 'white', border: '1.5px solid #e5e7eb', color: '#1a1040' }}
         />
         <select
           value={filterUser}
           onChange={e => setFilterUser(e.target.value)}
-          className="rounded-xl px-3 py-2 text-sm shadow-sm focus:outline-none"
+          className=" px-3 py-2 text-sm shadow-sm focus:outline-none"
           style={{ background: 'white', border: '1.5px solid #e5e7eb', color: '#1a1040' }}
         >
           <option value="">כל הקוראים</option>
           {USERS.map(u => <option key={u} value={u}>{u}</option>)}
         </select>
-        <button
-          onClick={() => setFilterUnread(f => !f)}
-          className="px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all"
-          style={filterUnread
-            ? { background: 'linear-gradient(135deg,#d97706,#b45309)', color: 'white' }
-            : { background: 'white', color: '#92400e', border: '1.5px solid #fbbf24' }
-          }
-        >
-          טרם נקרא על ידי כולם
-        </button>
+        {['rated', 'reviewed'].map(mode => (
+          <button
+            key={mode}
+            onClick={() => setFilterMode(f => f === mode ? '' : mode)}
+            className="px-4 py-2  text-sm font-semibold shadow-sm transition-all"
+            style={filterMode === mode
+              ? { background: 'linear-gradient(135deg,#d97706,#b45309)', color: 'white' }
+              : { background: 'white', color: '#92400e', border: '1.5px solid #fbbf24' }
+            }
+          >
+            {mode === 'rated' ? 'דורגו' : 'נכתבה ביקורת'}
+          </button>
+        ))}
       </div>
 
       {loading ? (
@@ -191,7 +198,7 @@ export default function ReviewsPage() {
               <motion.div
                 key={book.id}
                 layout
-                className="rounded-2xl overflow-hidden shadow-sm"
+                className=" overflow-hidden shadow-sm"
                 style={{ background: 'white', border: '1.5px solid #f3e8d0' }}
               >
                 {/* Book row */}
@@ -200,7 +207,7 @@ export default function ReviewsPage() {
                   onClick={() => toggleExpand(book.id)}
                 >
                   {/* Cover */}
-                  <div className="flex-shrink-0 rounded-lg overflow-hidden shadow-md" style={{ width: 44, height: 62 }}>
+                  <div className="flex-shrink-0  overflow-hidden shadow-md" style={{ width: 44, height: 62 }}>
                     <BookCover thumbnailUrl={book.thumbnailUrl} title={book.title} />
                   </div>
 
@@ -239,7 +246,7 @@ export default function ReviewsPage() {
                   {/* Add review button */}
                   <button
                     onClick={e => { e.stopPropagation(); setReviewModal(book); }}
-                    className="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition-all hover:shadow"
+                    className="flex-shrink-0 px-3 py-2  text-xs font-bold shadow-sm transition-all hover:shadow"
                     style={{ background: 'linear-gradient(135deg,#d97706,#b45309)', color: 'white' }}
                   >
                     + ביקורת
@@ -284,7 +291,7 @@ export default function ReviewsPage() {
                             {reviews.map(r => {
                               const c = USER_COLOR[r.user_name] || { bg: '#f9fafb', text: '#374151', dot: '#9ca3af' };
                               return (
-                                <div key={r.id} className="rounded-xl p-3 relative"
+                                <div key={r.id} className=" p-3 relative"
                                   style={{ background: c.bg, border: `1.5px solid ${c.dot}30` }}>
                                   <div className="flex items-center justify-between mb-1.5">
                                     <div className="flex items-center gap-2">

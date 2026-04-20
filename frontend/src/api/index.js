@@ -40,6 +40,9 @@ export const api = {
   saveReview: (data) => request('/reviews', { method: 'POST', body: JSON.stringify(data) }),
   deleteReview: (id) => request(`/reviews/${id}`, { method: 'DELETE' }),
 
+  // Next book recommendation
+  getNextBook: (userName) => request(`/next-book?user_name=${encodeURIComponent(userName)}`),
+
   // Family
   getFamily: () => request('/family'),
   addFamilyMember: (name) => request('/family', { method: 'POST', body: JSON.stringify({ name }) }),

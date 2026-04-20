@@ -26,7 +26,7 @@ export default function FilterBar({ filters, familyMembers, onChange, onReset, v
             placeholder="חיפוש לפי שם ספר או מחבר..."
             value={filters.search}
             onChange={e => onChange('search', e.target.value)}
-            className="w-full pr-9 pl-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-gray-50"
+            className="w-full pr-9 pl-3 py-2 border border-gray-200  text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-gray-50"
           />
         </div>
 
@@ -34,7 +34,7 @@ export default function FilterBar({ filters, familyMembers, onChange, onReset, v
         <select
           value={filters.owner}
           onChange={e => onChange('owner', e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 min-w-[130px]"
+          className="border border-gray-200  px-3 py-2 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 min-w-[130px]"
         >
           <option value="">כל הבעלים</option>
           {members.map(m => (
@@ -46,7 +46,7 @@ export default function FilterBar({ filters, familyMembers, onChange, onReset, v
         <select
           value={filters.status}
           onChange={e => onChange('status', e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 min-w-[120px]"
+          className="border border-gray-200  px-3 py-2 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 min-w-[120px]"
         >
           <option value="">כל הסטטוסים</option>
           {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -56,7 +56,7 @@ export default function FilterBar({ filters, familyMembers, onChange, onReset, v
         <select
           value={sortBy}
           onChange={e => onSortChange(e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 min-w-[155px]"
+          className="border border-gray-200  px-3 py-2 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 min-w-[155px]"
         >
           {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
@@ -71,7 +71,7 @@ export default function FilterBar({ filters, familyMembers, onChange, onReset, v
         <div className="flex-1" />
 
         {/* View Toggle */}
-        <div className="flex border border-gray-200 rounded-lg overflow-hidden text-sm font-medium">
+        <div className="flex border border-gray-200  overflow-hidden text-sm font-medium">
           <button
             onClick={() => onViewChange('shelf')}
             title="תצוגת מדף"

@@ -51,7 +51,7 @@ export default function TransferModal({ open, book, familyMembers, onClose, onTr
             onAnimationStart={handleOpen}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm pointer-events-auto">
+            <div className="bg-white  shadow-2xl w-full max-w-sm pointer-events-auto">
               <div className="flex items-center justify-between p-5 border-b border-gray-100">
                 <h2 className="text-xl font-bold text-gray-900">העברת ספר</h2>
                 <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
@@ -59,10 +59,10 @@ export default function TransferModal({ open, book, familyMembers, onClose, onTr
 
               <div className="p-5">
                 {/* Book info */}
-                <div className="flex gap-3 bg-amber-50 p-3 rounded-xl mb-5">
+                <div className="flex gap-3 bg-amber-50 p-3  mb-5">
                   {book.thumbnailUrl
-                    ? <img src={book.thumbnailUrl} alt="" className="w-12 h-16 object-cover rounded shadow flex-shrink-0" />
-                    : <div className="book-placeholder w-12 h-16 rounded shadow flex-shrink-0 flex items-center justify-center">
+                    ? <img src={book.thumbnailUrl} alt="" className="w-12 h-16 object-cover  shadow flex-shrink-0" />
+                    : <div className="book-placeholder w-12 h-16  shadow flex-shrink-0 flex items-center justify-center">
                         <span className="text-white font-bold">{book.title?.charAt(0)}</span>
                       </div>
                   }
@@ -80,7 +80,7 @@ export default function TransferModal({ open, book, familyMembers, onClose, onTr
                       required
                       value={holder}
                       onChange={e => setHolder(e.target.value)}
-                      className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+                      className="mt-1 w-full border border-gray-200  px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
                     >
                       <option value="">בחר...</option>
                       {members.map(m => (
@@ -94,7 +94,7 @@ export default function TransferModal({ open, book, familyMembers, onClose, onTr
                     <select
                       value={status}
                       onChange={e => setStatus(e.target.value)}
-                      className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+                      className="mt-1 w-full border border-gray-200  px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
                     >
                       {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
@@ -105,7 +105,7 @@ export default function TransferModal({ open, book, familyMembers, onClose, onTr
                     <select
                       value={location}
                       onChange={e => setLocation(e.target.value)}
-                      className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+                      className="mt-1 w-full border border-gray-200  px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
                     >
                       {locationOptions().map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
@@ -115,14 +115,14 @@ export default function TransferModal({ open, book, familyMembers, onClose, onTr
                     <button
                       type="button"
                       onClick={onClose}
-                      className="flex-1 border border-gray-200 text-gray-600 font-medium py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors"
+                      className="flex-1 border border-gray-200 text-gray-600 font-medium py-2.5  text-sm hover:bg-gray-50 transition-colors"
                     >
                       ביטול
                     </button>
                     <button
                       type="submit"
                       disabled={saving || !holder}
-                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold py-2.5  text-sm transition-colors"
                     >
                       {saving ? 'מעביר...' : 'העבר ספר'}
                     </button>

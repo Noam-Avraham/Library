@@ -44,7 +44,7 @@ export default function BookCard({ book, onTransfer, onDelete, onEdit, onReview 
       exit={{ opacity: 0, scale: 0.9 }}
       whileHover={{ y: -8 }}
       transition={{ duration: 0.2 }}
-      className="relative cursor-pointer group rounded-sm overflow-hidden"
+      className="relative cursor-pointer group  overflow-hidden"
       style={{
         aspectRatio: '2/3',
         boxShadow: '4px 6px 0 0 rgba(0,0,0,0.18), 7px 10px 18px rgba(0,0,0,0.22)',
@@ -111,27 +111,27 @@ export default function BookCard({ book, onTransfer, onDelete, onEdit, onReview 
           >
             <button
               onClick={(e) => { e.stopPropagation(); onTransfer(book); }}
-              className="bg-white text-indigo-700 font-semibold text-xs px-4 py-1.5 rounded-lg hover:bg-indigo-50 w-24 transition-colors"
+              className="bg-white text-indigo-700 font-semibold text-xs px-4 py-1.5  hover:bg-indigo-50 w-24 transition-colors"
             >
               העברה
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(book); }}
-              className="bg-white text-sky-700 font-semibold text-xs px-4 py-1.5 rounded-lg hover:bg-sky-50 w-24 transition-colors"
+              className="bg-white text-sky-700 font-semibold text-xs px-4 py-1.5  hover:bg-sky-50 w-24 transition-colors"
             >
               עריכה
             </button>
             {onReview && (
               <button
                 onClick={(e) => { e.stopPropagation(); onReview(book); }}
-                className="bg-white text-amber-700 font-semibold text-xs px-4 py-1.5 rounded-lg hover:bg-amber-50 w-24 transition-colors"
+                className="bg-white text-amber-700 font-semibold text-xs px-4 py-1.5  hover:bg-amber-50 w-24 transition-colors"
               >
                 ⭐ ביקורת
               </button>
             )}
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(book.id); }}
-              className="bg-white text-red-600 font-semibold text-xs px-4 py-1.5 rounded-lg hover:bg-red-50 w-24 transition-colors"
+              className="bg-white text-red-600 font-semibold text-xs px-4 py-1.5  hover:bg-red-50 w-24 transition-colors"
             >
               מחיקה
             </button>

@@ -4,7 +4,7 @@ import { api } from '../api/index.js';
 import { DEFAULT_OWNER } from '../data/config.js';
 
 const OVERLAY = { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const CARD_BG  = { background: '#1e1a2e', border: '1px solid rgba(180,130,30,0.25)', borderRadius: 16 };
+const CARD_BG  = { background: '#1e1a2e', border: '1px solid rgba(180,130,30,0.25)', borderRadius: 0 };
 
 function BookResultRow({ item, selected, onToggle, selectedMatch, onMatchChange }) {
   const { identified, matches } = item;
@@ -12,7 +12,7 @@ function BookResultRow({ item, selected, onToggle, selectedMatch, onMatchChange 
 
   return (
     <div
-      className="flex gap-3 p-3 rounded-xl cursor-pointer transition-all"
+      className="flex gap-3 p-3  cursor-pointer transition-all"
       style={{
         background: selected ? 'rgba(180,130,30,0.12)' : 'rgba(255,255,255,0.04)',
         border: `1px solid ${selected ? 'rgba(180,130,30,0.5)' : 'rgba(255,255,255,0.08)'}`,
@@ -22,7 +22,7 @@ function BookResultRow({ item, selected, onToggle, selectedMatch, onMatchChange 
       {/* Checkbox */}
       <div className="flex-shrink-0 mt-1">
         <div
-          className="w-5 h-5 rounded flex items-center justify-center"
+          className="w-5 h-5  flex items-center justify-center"
           style={{
             background: selected ? '#d97706' : 'transparent',
             border: `2px solid ${selected ? '#d97706' : '#6b7280'}`,
@@ -33,7 +33,7 @@ function BookResultRow({ item, selected, onToggle, selectedMatch, onMatchChange 
       </div>
 
       {/* Thumbnail */}
-      <div className="flex-shrink-0 w-12 h-16 rounded overflow-hidden" style={{ background: '#2d2547' }}>
+      <div className="flex-shrink-0 w-12 h-16  overflow-hidden" style={{ background: '#2d2547' }}>
         {best?.thumbnailUrl
           ? <img src={best.thumbnailUrl} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
           : <div className="w-full h-full flex items-center justify-center text-2xl">📖</div>
@@ -57,7 +57,7 @@ function BookResultRow({ item, selected, onToggle, selectedMatch, onMatchChange 
         {/* Match selector */}
         {matches.length > 1 && (
           <select
-            className="mt-1 text-xs rounded px-1 py-0.5 w-full"
+            className="mt-1 text-xs  px-1 py-0.5 w-full"
             style={{ background: '#2d2547', color: '#94a3b8', border: '1px solid #4b5563' }}
             value={matches.indexOf(selectedMatch ?? matches[0])}
             onChange={e => { e.stopPropagation(); onMatchChange(matches[Number(e.target.value)]); }}
@@ -192,7 +192,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
               <h2 className="text-lg font-bold" style={{ color: '#f5e6cc' }}>סרוק מדף ספרים</h2>
               <p className="text-xs mt-0.5" style={{ color: '#94a3b8' }}>העלה תמונה ובינה מלאכותית תזהה את הספרים</p>
             </div>
-            <button onClick={handleClose} className="text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10" style={{ color: '#94a3b8' }}>✕</button>
+            <button onClick={handleClose} className="text-xl w-8 h-8 flex items-center justify-center  hover:bg-white/10" style={{ color: '#94a3b8' }}>✕</button>
           </div>
 
           {/* Body */}
@@ -203,7 +203,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
               <div className="flex flex-col gap-4">
                 {/* Drop zone */}
                 <div
-                  className="rounded-xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all"
+                  className=" flex flex-col items-center justify-center gap-3 cursor-pointer transition-all"
                   style={{
                     border: `2px dashed ${dragging ? '#d97706' : 'rgba(180,130,30,0.4)'}`,
                     background: dragging ? 'rgba(180,130,30,0.08)' : 'rgba(255,255,255,0.03)',
@@ -217,12 +217,13 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
                 >
                   <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => loadFile(e.target.files[0])} />
                   {imagePreview ? (
-                    <img src={imagePreview} alt="preview" className="rounded-lg max-h-64 object-contain w-full" />
+                    <img src={imagePreview} alt="preview" className=" max-h-64 object-contain w-full" />
                   ) : (
                     <>
                       <span className="text-4xl">📷</span>
                       <p className="text-sm font-medium" style={{ color: '#f5e6cc' }}>גרור תמונה לכאן או לחץ לבחירה</p>
                       <p className="text-xs" style={{ color: '#6b7280' }}>תמונת מדף ספרים — יזוהו ספרים אוטומטית</p>
+                      <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>שימו לב שהאיכות טובה ושניתן לראות את הכותרת</p>
                     </>
                   )}
                 </div>
@@ -230,7 +231,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
                 {imagePreview && phase !== 'scanning' && (
                   <button
                     onClick={handleScan}
-                    className="w-full py-3 rounded-xl font-semibold text-sm transition-all"
+                    className="w-full py-3  font-semibold text-sm transition-all"
                     style={{ background: 'linear-gradient(135deg, #d97706, #b45309)', color: '#fffef8' }}
                   >
                     🔍 זהה ספרים
@@ -259,7 +260,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
                     <select
                       value={owner}
                       onChange={e => setOwner(e.target.value)}
-                      className="w-full rounded-lg px-3 py-2 text-sm"
+                      className="w-full  px-3 py-2 text-sm"
                       style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}
                     >
                       {familyMembers.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
@@ -270,7 +271,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
                     <input
                       value={location}
                       onChange={e => setLocation(e.target.value)}
-                      className="w-full rounded-lg px-3 py-2 text-sm"
+                      className="w-full  px-3 py-2 text-sm"
                       style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}
                     />
                   </div>
@@ -329,7 +330,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
               <button
                 onClick={handleAdd}
                 disabled={adding || selectedCount === 0}
-                className="w-full py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-50"
+                className="w-full py-3  font-semibold text-sm transition-all disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #d97706, #b45309)', color: '#fffef8' }}
               >
                 {adding ? 'מוסיף...' : `הוסף ${selectedCount} ספרים`}

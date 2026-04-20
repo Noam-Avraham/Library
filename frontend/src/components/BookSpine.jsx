@@ -90,13 +90,13 @@ export default function BookSpine({ book, onTransfer, onDelete, onEdit, onReview
                 zIndex:    9999,
                 width:     '190px',
               }}
-              className="bg-white rounded-xl shadow-2xl p-3 border border-gray-100"
+              className="bg-white  shadow-2xl p-3 border border-gray-100"
             >
               {book.thumbnailUrl && (
                 <img
                   src={book.thumbnailUrl}
                   alt=""
-                  className="w-full h-24 object-cover rounded-lg mb-2"
+                  className="w-full h-24 object-cover  mb-2"
                 />
               )}
               <p className="font-bold text-sm text-gray-900 leading-snug line-clamp-2">
@@ -121,7 +121,7 @@ export default function BookSpine({ book, onTransfer, onDelete, onEdit, onReview
                 <p className="text-xs text-orange-600 mt-0.5">אצל: {book.current_holder}</p>
               )}
               {wrongPlace && (
-                <div className="flex items-center gap-1.5 mt-2 px-2 py-1.5 rounded-lg text-xs font-medium"
+                <div className="flex items-center gap-1.5 mt-2 px-2 py-1.5  text-xs font-medium"
                   style={{ background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa' }}>
                   <span>🏠</span>
                   <span>הספר ב{book.location} (שייך ל{book.owner})</span>
@@ -130,27 +130,27 @@ export default function BookSpine({ book, onTransfer, onDelete, onEdit, onReview
               <div className="flex gap-1 mt-2 pt-2 border-t border-gray-100">
                 <button
                   onClick={(e) => { e.stopPropagation(); setOpen(false); onTransfer(book); }}
-                  className="flex-1 text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg py-1.5 font-medium transition-colors"
+                  className="flex-1 text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100  py-1.5 font-medium transition-colors"
                 >
                   העברה
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(book); }}
-                  className="flex-1 text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg py-1.5 font-medium transition-colors"
+                  className="flex-1 text-xs bg-sky-50 text-sky-700 hover:bg-sky-100  py-1.5 font-medium transition-colors"
                 >
                   עריכה
                 </button>
                 {onReview && (
                   <button
                     onClick={(e) => { e.stopPropagation(); setOpen(false); onReview(book); }}
-                    className="flex-1 text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg py-1.5 font-medium transition-colors"
+                    className="flex-1 text-xs bg-amber-50 text-amber-700 hover:bg-amber-100  py-1.5 font-medium transition-colors"
                   >
                     ⭐
                   </button>
                 )}
                 <button
                   onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete(book.id); }}
-                  className="flex-1 text-xs bg-red-50 text-red-600 hover:bg-red-100 rounded-lg py-1.5 font-medium transition-colors"
+                  className="flex-1 text-xs bg-red-50 text-red-600 hover:bg-red-100  py-1.5 font-medium transition-colors"
                 >
                   מחיקה
                 </button>
@@ -168,7 +168,7 @@ export default function BookSpine({ book, onTransfer, onDelete, onEdit, onReview
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={handleClick}
-        className="relative cursor-pointer rounded-t-sm flex flex-col items-center select-none overflow-hidden"
+        className="relative cursor-pointer -t-sm flex flex-col items-center select-none overflow-hidden"
         style={{
           width:           `${SPINE_WIDTH}px`,
           height:          `${SPINE_HEIGHT}px`,

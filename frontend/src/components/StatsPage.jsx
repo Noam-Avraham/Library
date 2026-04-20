@@ -26,14 +26,13 @@ function StatBar({ label, count, max, color = 'bg-indigo-500' }) {
 }
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, sub, color = 'from-indigo-500 to-indigo-700' }) {
+function StatCard({ label, value, sub, color = 'from-indigo-500 to-indigo-700' }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`bg-gradient-to-br ${color} rounded-2xl p-5 text-white shadow-lg`}
+      className={`bg-gradient-to-br ${color}  p-5 text-white shadow-lg`}
     >
-      <div className="text-3xl mb-1">{icon}</div>
       <div className="text-3xl font-bold">{value}</div>
       <div className="text-sm font-medium opacity-90 mt-0.5">{label}</div>
       {sub && <div className="text-xs opacity-70 mt-1">{sub}</div>}
@@ -45,7 +44,7 @@ function StatCard({ icon, label, value, sub, color = 'from-indigo-500 to-indigo-
 function MiniBookRow({ book }) {
   return (
     <div className="flex items-center gap-3 py-2 border-b border-amber-100 last:border-0">
-      <div className="w-8 h-11 rounded overflow-hidden bg-gray-100 flex-shrink-0">
+      <div className="w-8 h-11  overflow-hidden bg-gray-100 flex-shrink-0">
         {book.thumbnailUrl
           ? <img src={book.thumbnailUrl} alt="" className="w-full h-full object-cover" />
           : <div className="book-placeholder w-full h-full flex items-center justify-center">
@@ -102,18 +101,18 @@ export default function StatsPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard icon="📚" label="סה״כ ספרים"      value={stats.total}   color="from-indigo-600 to-indigo-800" />
-        <StatCard icon="✅" label="זמינים"           value={available}     color="from-emerald-500 to-emerald-700" />
-        <StatCard icon="📤" label="מושאלים"          value={borrowed}      color="from-orange-500 to-orange-700" />
-        <StatCard icon="⭐" label="רשימת משאלות"    value={wishlist}      color="from-sky-500 to-sky-700" />
+        <StatCard label="סה״כ ספרים"      value={stats.total}   color="from-indigo-600 to-indigo-800" />
+        <StatCard label="זמינים"           value={available}     color="from-emerald-500 to-emerald-700" />
+        <StatCard label="מושאלים"          value={borrowed}      color="from-orange-500 to-orange-700" />
+        <StatCard label="רשימת משאלות"    value={wishlist}      color="from-sky-500 to-sky-700" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* By owner */}
-        <div className="library-card rounded-2xl p-5">
+        <div className="library-card  p-5">
           <h3 className="font-bold text-gray-800 text-base mb-4 flex items-center gap-2">
-            <span>👤</span> ספרים לפי בעלים
+            ספרים לפי בעלים
           </h3>
           <div className="space-y-0.5">
             {stats.byOwner?.map(r => (
@@ -123,9 +122,9 @@ export default function StatsPage() {
         </div>
 
         {/* By location */}
-        <div className="library-card rounded-2xl p-5">
+        <div className="library-card  p-5">
           <h3 className="font-bold text-gray-800 text-base mb-4 flex items-center gap-2">
-            <span>📍</span> ספרים לפי מיקום
+            ספרים לפי מיקום
           </h3>
           <div className="space-y-0.5">
             {stats.byLocation?.map(r => (
@@ -136,9 +135,9 @@ export default function StatsPage() {
 
         {/* By genre */}
         {stats.byGenre?.length > 0 && (
-          <div className="library-card rounded-2xl p-5">
+          <div className="library-card  p-5">
             <h3 className="font-bold text-gray-800 text-base mb-4 flex items-center gap-2">
-              <span>🏷️</span> ספרים לפי ז׳אנר
+              ספרים לפי ז׳אנר
             </h3>
             <div className="space-y-0.5">
               {stats.byGenre?.map(r => (
@@ -150,9 +149,9 @@ export default function StatsPage() {
 
         {/* On loan */}
         {stats.onLoan?.length > 0 && (
-          <div className="library-card rounded-2xl p-5">
+          <div className="library-card  p-5">
             <h3 className="font-bold text-gray-800 text-base mb-4 flex items-center gap-2">
-              <span>📤</span> ספרים מושאלים כעת
+              ספרים מושאלים כעת
               <span className="bg-orange-100 text-orange-700 text-xs px-2 py-0.5 rounded-full font-semibold">{stats.onLoan.length}</span>
             </h3>
             <div className="max-h-64 overflow-y-auto">
@@ -163,9 +162,9 @@ export default function StatsPage() {
 
         {/* Wishlist */}
         {stats.wishlist?.length > 0 && (
-          <div className="library-card rounded-2xl p-5">
+          <div className="library-card  p-5">
             <h3 className="font-bold text-gray-800 text-base mb-4 flex items-center gap-2">
-              <span>⭐</span> רשימת משאלות
+              רשימת משאלות
               <span className="bg-sky-100 text-sky-700 text-xs px-2 py-0.5 rounded-full font-semibold">{stats.wishlist.length}</span>
             </h3>
             <div className="max-h-64 overflow-y-auto">
@@ -175,7 +174,7 @@ export default function StatsPage() {
         )}
 
         {/* Recently added */}
-        <div className="library-card rounded-2xl p-5">
+        <div className="library-card  p-5">
           <h3 className="font-bold text-gray-800 text-base mb-4 flex items-center gap-2">
             <span>🆕</span> נוספו לאחרונה
           </h3>

@@ -23,6 +23,14 @@ backend/seed-family.js
 # ── Build output ──────────────────────────────────────────────────────────────
 dist/
 build/
+frontend/.vite/
+
+# ── Photos / images uploaded locally ─────────────────────────────────────────
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
 
 # ── Logs and runtime output ───────────────────────────────────────────────────
 *.log

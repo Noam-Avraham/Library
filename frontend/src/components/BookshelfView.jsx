@@ -1,11 +1,13 @@
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import BookCard from './BookCard.jsx';
 import BookSpine from './BookSpine.jsx';
 
-// ── Grouping helpers ──────────────────────────────────────────────────────────
-const SHELF_SIZE = 14;
+const SPINE_WIDTH = 36;
+const SPINE_GAP   = 2;   // gap-0.5 = 2px
+const SHELF_PAD   = 64;  // px-8 on each side = 32*2
 
-function groupBooks(books, sortBy) {
+function groupBooks(books, sortBy, shelfSize) {
   const makeGroups = (keyFn, fallback) => {
     const map = {};
     books.forEach(b => {
@@ -23,10 +25,10 @@ function groupBooks(books, sortBy) {
       return makeGroups(b => b.genre, 'ללא ז\'אנר');
     case 'title-az':
     case 'author-az': {
-      // Flat — chunk into shelves
+      const size = shelfSize || 14;
       const shelves = [];
-      for (let i = 0; i < books.length; i += SHELF_SIZE)
-        shelves.push(['', books.slice(i, i + SHELF_SIZE)]);
+      for (let i = 0; i < books.length; i += size)
+        shelves.push(['', books.slice(i, i + size)]);
       return shelves;
     }
     default: // location
@@ -41,7 +43,7 @@ function ShelfRow({ label, books, onTransfer, onDelete, onEdit, onReview }) {
       {/* Location label */}
       {label && (
         <div className="flex items-center gap-3 px-8 pt-5 pb-1">
-          <span className="text-sm font-bold tracking-wide" style={{ color: '#4A2810' }}>📍 {label}</span>
+          <span className="text-sm font-bold tracking-wide" style={{ color: '#4A2810' }}>{label}</span>
           <div className="flex-1 h-px" style={{ background: '#8B5E3C55' }} />
           <span className="text-xs" style={{ color: '#6B3F20' }}>{books.length} ספרים</span>
         </div>
@@ -86,10 +88,28 @@ function ShelfRow({ label, books, onTransfer, onDelete, onEdit, onReview }) {
 
 // ── Shelf view ────────────────────────────────────────────────────────────────
 function ShelfView({ books, sortBy, onTransfer, onDelete, onEdit, onReview }) {
-  const groups = groupBooks(books, sortBy);
+  const containerRef = useRef(null);
+  const [shelfSize, setShelfSize] = useState(14);
+
+  const measure = useCallback(() => {
+    if (!containerRef.current) return;
+    const w = containerRef.current.clientWidth;
+    const available = w - SHELF_PAD;
+    const count = Math.max(1, Math.floor(available / (SPINE_WIDTH + SPINE_GAP)));
+    setShelfSize(count);
+  }, []);
+
+  useEffect(() => {
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [measure]);
+
+  const groups = groupBooks(books, sortBy, shelfSize);
 
   return (
-    <div className="rounded-2xl overflow-hidden shadow-xl" style={{ border: '1px solid #8B5E3C44', background: '#fdf6ee' }}>
+    <div ref={containerRef} className=" overflow-hidden shadow-xl" style={{ border: '1px solid #8B5E3C44', background: '#fdf6ee' }}>
       {groups.map(([label, shelfBooks], i) => (
         <ShelfRow
           key={label || i}

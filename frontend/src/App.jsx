@@ -9,6 +9,8 @@ import EditBookModal from './components/EditBookModal.jsx';
 import StatsPage from './components/StatsPage.jsx';
 import ReviewsPage from './components/ReviewsPage.jsx';
 import ReviewModal from './components/ReviewModal.jsx';
+import BookReviewsModal from './components/BookReviewsModal.jsx';
+import NextBookModal from './components/NextBookModal.jsx';
 import ShelfScanner from './components/ShelfScanner.jsx';
 
 const INITIAL_FILTERS = { search: '', owner: '', status: '' };
@@ -27,6 +29,8 @@ export default function App() {
   const [transferBook,  setTransferBook]  = useState(null);
   const [editBook,      setEditBook]      = useState(null);
   const [reviewBook,    setReviewBook]    = useState(null);
+  const [viewReviewsBook, setViewReviewsBook] = useState(null);
+  const [nextBookOpen,  setNextBookOpen]  = useState(false);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchBooks = useCallback(async () => {
@@ -99,6 +103,7 @@ export default function App() {
       <Header
         onAddClick={() => setAddOpen(true)}
         onScanClick={() => setScanOpen(true)}
+        onNextBookClick={() => setNextBookOpen(true)}
         bookCount={books.length}
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -131,10 +136,18 @@ export default function App() {
             onTransfer={setTransferBook}
             onDelete={handleDeleteBook}
             onEdit={setEditBook}
-            onReview={setReviewBook}
+            onReview={setViewReviewsBook}
           />
         </main>
       </>}
+
+      {/* Quote footer */}
+      <footer className="text-center py-8 px-4" dir="rtl">
+        <p className="text-sm italic" style={{ color: '#8B5E3C' }}>
+          "אם תאכל שלוש ארוחות ביום תהיה שמן. אם תקרא שלושה ספרים ביום תהיה חכם."
+        </p>
+        <p className="text-xs mt-1 font-semibold" style={{ color: '#6B3F20' }}>~ שמעון פרס</p>
+      </footer>
 
       <ShelfScanner
         open={scanOpen}
@@ -163,6 +176,13 @@ export default function App() {
         familyMembers={familyMembers}
         onClose={() => setEditBook(null)}
         onSave={handleUpdateBook}
+      />
+      <NextBookModal open={nextBookOpen} onClose={() => setNextBookOpen(false)} />
+      <BookReviewsModal
+        open={!!viewReviewsBook}
+        book={viewReviewsBook}
+        onClose={() => setViewReviewsBook(null)}
+        onAddReview={book => { setViewReviewsBook(null); setReviewBook(book); }}
       />
       <ReviewModal
         open={!!reviewBook}
