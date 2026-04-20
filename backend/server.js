@@ -342,8 +342,30 @@ app.post('/api/scan-shelf', async (req, res) => {
   let identified = [];
   try {
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
+      model: 'claude-opus-4-7',
+      max_tokens: 4096,
+      tools: [{
+        name: 'report_books',
+        description: 'Report all books identified on the shelf',
+        input_schema: {
+          type: 'object',
+          properties: {
+            books: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  title:  { type: 'string', description: 'Book title as it appears on the spine' },
+                  author: { type: 'string', description: 'Author name, or empty string if not visible' },
+                },
+                required: ['title', 'author'],
+              },
+            },
+          },
+          required: ['books'],
+        },
+      }],
+      tool_choice: { type: 'tool', name: 'report_books' },
       messages: [{
         role: 'user',
         content: [
@@ -353,19 +375,27 @@ app.post('/api/scan-shelf', async (req, res) => {
           },
           {
             type: 'text',
-            text: `אתה מנתח תמונה של מדף ספרים. בדוק כל ספר בתמונה וחלץ את שם הספר ושם המחבר מהשדרה (הצד) של הספר.
-הקפד לקרוא עברית בדיוק - כולל ספרים ישנים עם כתב קטן.
-החזר אך ורק מערך JSON תקין, ללא טקסט נוסף, בפורמט:
-[{"title":"שם הספר","author":"שם המחבר"}]
-אם המחבר לא נראה, השתמש במחרוזת ריקה. כלול כל ספר שאתה יכול לקרוא, גם חלקית.`,
+            text: `You are an expert librarian and OCR specialist analyzing a photo of a bookshelf.
+
+Your task: identify EVERY book spine visible in the image and extract the title and author.
+
+Instructions:
+- Scan left-to-right, top-to-bottom across ALL shelves in the image
+- Book spines are usually vertical — tilt your reading mentally to read rotated text
+- Hebrew text reads right-to-left; English text reads left-to-right
+- For Hebrew books: the title is usually larger, the author below or above it
+- Include books that are partially visible or have faded text — give your best reading
+- If you can only read the title but not the author, include the book with an empty author
+- Do NOT skip books just because the text is small or the angle is awkward
+- Report the text exactly as printed — do not translate or correct spelling
+- If a spine has both Hebrew and English text, prefer the Hebrew title`,
           },
         ],
       }],
     });
 
-    const raw = message.content[0]?.text || '[]';
-    const jsonMatch = raw.match(/\[[\s\S]*\]/);
-    identified = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+    const toolUse = message.content.find(b => b.type === 'tool_use');
+    identified = toolUse?.input?.books ?? [];
   } catch (err) {
     return res.status(500).json({ error: `Claude error: ${err.message}` });
   }
