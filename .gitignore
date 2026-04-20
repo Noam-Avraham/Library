@@ -1,0 +1,42 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+hebrewlibraryAPI.txt
+
+# ── Personal configuration (contains family names) ────────────────────────────
+# Copy family.config.example.json → family.config.json and edit it locally.
+family.config.json
+
+# ── Personal / one-off scripts (contain family names and book lists) ──────────
+add-books-from-photo.js
+backend/seed-family.js
+
+# ── Database (contains personal library data) ─────────────────────────────────
+*.db
+*.db-shm
+*.db-wal
+
+# ── Build output ──────────────────────────────────────────────────────────────
+dist/
+build/
+
+# ── Logs and runtime output ───────────────────────────────────────────────────
+*.log
+*-out.txt
+
+# ── OS files ──────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor files ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln

@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  font-family: 'Heebo', sans-serif;
+}
+
+html, body {
+  direction: rtl;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #fdf8f0;
+}
+::-webkit-scrollbar-thumb {
+  background: #c9a96e;
+  border-radius: 3px;
+}
+
+/* Book cover placeholder gradient */
+.book-placeholder {
+  background: linear-gradient(135deg, #6366f1 0%, #0ea5e9 100%);
+}
+
+/* Parchment background texture */
+body {
+  background-color: #f5e6cc;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(180,130,60,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(100,80,40,0.05) 0%, transparent 50%);
+}
+
+/* Wooden shelf texture */
+.shelf-plank {
+  background: linear-gradient(
+    to bottom,
+    #c8842a 0%,
+    #a0611a 30%,
+    #8b4f12 60%,
+    #7a3f0e 100%
+  );
+  position: relative;
+}
+.shelf-plank::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 40px,
+    rgba(0,0,0,0.04) 40px,
+    rgba(0,0,0,0.04) 42px
+  );
+}
+
+/* Classic library card style */
+.library-card {
+  background: #fffef8;
+  border: 1px solid #e8d5b0;
+  box-shadow: 0 2px 8px rgba(120,80,20,0.12);
+}
