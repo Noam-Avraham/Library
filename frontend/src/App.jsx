@@ -13,6 +13,15 @@ import BookReviewsModal from './components/BookReviewsModal.jsx';
 import NextBookModal from './components/NextBookModal.jsx';
 import ShelfScanner from './components/ShelfScanner.jsx';
 
+const QUOTES = [
+  { text: 'אם תאכל שלוש ארוחות ביום תהיה שמן. אם תקרא שלושה ספרים ביום תהיה חכם.', author: 'שמעון פרס' },
+  { text: 'ישנם ספרים שהחלק הטוב ביותר שלהם הוא בכריכתם.', author: "צ'ארלס דיקנס" },
+  { text: 'יש ספרים שדפי העטיפה שלהם הם הטובים ביותר שבהם.', author: 'מארק טוויין' },
+  { text: 'ספרים הם מגפה אנושית. תשע עשיריות של הספרים הם טיפשיים, והספרים הטובים מפריכים את הרעים.', author: "בנימין ד'יזראלי" },
+  { text: 'לעולם אל תשאיל ספרים. איש אינו מחזיר אותם. הספרים שיש לי בספרייתי הם אלה שאנשים השאילו לי.', author: 'אנטול פרנס' },
+];
+const QUOTE = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+
 const INITIAL_FILTERS = { search: '', owner: '', status: '' };
 
 export default function App() {
@@ -143,10 +152,8 @@ export default function App() {
 
       {/* Quote footer */}
       <footer className="text-center py-8 px-4" dir="rtl">
-        <p className="text-sm italic" style={{ color: '#8B5E3C' }}>
-          "אם תאכל שלוש ארוחות ביום תהיה שמן. אם תקרא שלושה ספרים ביום תהיה חכם."
-        </p>
-        <p className="text-xs mt-1 font-semibold" style={{ color: '#6B3F20' }}>~ שמעון פרס</p>
+        <p className="text-sm italic" style={{ color: '#8B5E3C' }}>"{QUOTE.text}"</p>
+        <p className="text-xs mt-1 font-semibold" style={{ color: '#6B3F20' }}>~ {QUOTE.author}</p>
         <p className="mt-4" style={{ color: '#b8956a', fontSize: '0.6rem', lineHeight: '1.6' }}>
           האתר נוצר ע״י נעם אברהם · התמונות נלקחו ממקורות מידע חופשיים כגון ויקיפדיה ומאגר המידע של הספרייה הלאומית · במידה וישנה הפרה של זכויות יוצרים באתר זה נא לפנות ליוצר האתר
         </p>
