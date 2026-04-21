@@ -376,7 +376,42 @@ Recommend real, well-known books that match their taste. Recommend ONLY books or
 
       const raw = message.content[0]?.text || '[]';
       const match = raw.match(/\[[\s\S]*\]/);
-      const recommendations = match ? JSON.parse(match[0]) : [];
+      const picks = match ? JSON.parse(match[0]) : [];
+
+      // Enrich each recommendation with cover/ISBN from Google Books + NLI
+      const recommendations = await Promise.all(
+        picks.map(async pick => {
+          const query = [pick.title, pick.author].filter(Boolean).join(' ');
+          try {
+            const [nliRes, googleRes] = await Promise.allSettled([fetchNLI(query), fetchGoogle(query)]);
+            const nliBooks    = nliRes.status    === 'fulfilled' ? nliRes.value    : [];
+            const googleBooks = googleRes.status === 'fulfilled' ? googleRes.value : [];
+            const merged = [...nliBooks];
+            const nliIsbns = new Set(nliBooks.map(b => b.isbn).filter(Boolean));
+            for (const g of googleBooks) {
+              if (g.isbn && nliIsbns.has(g.isbn)) {
+                const idx = merged.findIndex(b => b.isbn === g.isbn);
+                if (idx >= 0 && !merged[idx].thumbnailUrl && g.thumbnailUrl)
+                  merged[idx].thumbnailUrl = g.thumbnailUrl;
+              } else {
+                merged.push(g);
+              }
+            }
+            const best = merged.sort((a, b) => scoreResult(b, pick.title) - scoreResult(a, pick.title))[0];
+            return {
+              title:        best?.title        || pick.title,
+              author:       best?.author       || pick.author,
+              thumbnailUrl: best?.thumbnailUrl || '',
+              isbn:         best?.isbn         || '',
+              genre:        best?.genre        || '',
+              reason:       pick.reason,
+            };
+          } catch {
+            return { title: pick.title, author: pick.author, thumbnailUrl: '', reason: pick.reason };
+          }
+        })
+      );
+
       return res.json({ recommendations, reason: 'ok', mode: 'external' });
     } catch (err) {
       return res.status(500).json({ error: err.message });
