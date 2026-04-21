@@ -370,7 +370,7 @@ ${readList}
 Return ONLY a JSON array, no other text:
 [{"title": "...", "author": "...", "reason": "<one sentence in Hebrew explaining why they'd enjoy it>"}]
 
-Recommend real, well-known books that match their taste. Return exactly 5.`,
+Recommend real, well-known books that match their taste. Recommend ONLY books originally written in Hebrew or widely available in Hebrew translation. Return exactly 5.`,
         }],
       });
 
@@ -417,7 +417,7 @@ ${unreadList}
 Return ONLY a JSON array, no other text:
 [{"index": <number from available list>, "reason": "<one sentence in Hebrew explaining why they'd enjoy it>"}]
 
-Pick the best matches based on genres, authors, themes, and their ratings/reviews. Return at most 5.`,
+Pick the best matches based on genres, authors, themes, and their ratings/reviews. Recommend ONLY books originally written in Hebrew or widely available in Hebrew translation. Return at most 5.`,
       }],
     });
 
