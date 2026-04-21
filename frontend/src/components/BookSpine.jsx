@@ -62,9 +62,13 @@ export default function BookSpine({ book, onTransfer, onDelete, onEdit, onReview
     e.stopPropagation();
     if (!open) {
       const rect = spineRef.current.getBoundingClientRect();
+      const POPUP_W = 190;
+      const POPUP_H = 260;
+      const rawLeft   = rect.left + rect.width / 2;
+      const rawBottom = window.innerHeight - rect.top + 10;
       setPos({
-        bottom: window.innerHeight - rect.top + 10,
-        left:   rect.left + rect.width / 2,
+        bottom: Math.min(rawBottom, window.innerHeight - POPUP_H - 8),
+        left:   Math.max(POPUP_W / 2 + 8, Math.min(window.innerWidth - POPUP_W / 2 - 8, rawLeft)),
       });
     }
     setOpen(prev => !prev);

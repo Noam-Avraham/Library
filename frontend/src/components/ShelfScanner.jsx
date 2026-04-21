@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api/index.js';
 import { DEFAULT_OWNER } from '../data/config.js';
+import { locationOptions } from '../data/members.js';
 
 const OVERLAY = { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const CARD_BG  = { background: '#1e1a2e', border: '1px solid rgba(180,130,30,0.25)', borderRadius: 0 };
@@ -100,10 +101,12 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
 
   useEffect(() => {
     if (open) {
-      api.getLocations().then(locs => {
-        setLocations(locs);
-        if (locs.length > 0 && !locs.includes(location)) setLocation(locs[0]);
-      }).catch(() => {});
+      const base = locationOptions().filter(l => l !== 'אחר');
+      api.getLocations().then(apiLocs => {
+        const merged = [...new Set([...base, ...apiLocs])];
+        setLocations(merged);
+        if (!merged.includes(location)) setLocation(merged[0] || 'בית');
+      }).catch(() => setLocations(base));
     }
   }, [open]);
 

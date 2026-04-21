@@ -21,38 +21,35 @@ function StarRating({ value, onChange }) {
   const [hovered, setHovered] = useState(0);
   const display = hovered || value;
 
-  function halfVal(e, star) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    return (e.clientX - rect.left) < rect.width / 2 ? star - 0.5 : star;
-  }
-
   return (
     <div className="flex justify-center" dir="ltr" style={{ gap: 6 }}>
       {[1, 2, 3, 4, 5].map(star => {
-        let fillPct = 0;
-        if (display >= star) fillPct = 100;
-        else if (display >= star - 0.5) fillPct = 50;
-
+        const isFull = display >= star;
+        const isHalf = !isFull && display >= star - 0.5;
         return (
-          <button
-            key={star}
-            type="button"
-            onMouseMove={e => setHovered(halfVal(e, star))}
-            onMouseLeave={() => setHovered(0)}
-            onClick={e => { const v = halfVal(e, star); onChange(v === value ? 0 : v); }}
-            onTouchEnd={e => {
-              e.preventDefault();
-              const t = e.changedTouches[0];
-              const rect = e.currentTarget.getBoundingClientRect();
-              const v = (t.clientX - rect.left) < rect.width / 2 ? star - 0.5 : star;
-              onChange(v === value ? 0 : v);
-            }}
-            className="transition-transform hover:scale-110 active:scale-95"
-            style={{ position: 'relative', width: 40, height: 40, flexShrink: 0, fontSize: '2rem', lineHeight: '40px' }}
-          >
-            <span style={{ position: 'absolute', left: 0, top: 0, width: '100%', textAlign: 'left', color: 'rgba(255,255,255,0.15)' }}>★</span>
-            <span style={{ position: 'absolute', left: 0, top: 0, width: `${fillPct}%`, overflow: 'hidden', textAlign: 'left', color: '#f59e0b', whiteSpace: 'nowrap' }}>★</span>
-          </button>
+          <div key={star} className="relative" style={{ width: 44, height: 44, flexShrink: 0 }} onMouseLeave={() => setHovered(0)}>
+            {/* Star visual — pointer-events none so buttons underneath receive events */}
+            <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', pointerEvents: 'none' }}>
+              <span className="relative inline-block" style={{ width: '1em', lineHeight: 1 }}>
+                <span style={{ color: 'rgba(255,255,255,0.15)' }}>★</span>
+                {(isFull || isHalf) && (
+                  <span style={{ position: 'absolute', left: 0, top: 0, width: isFull ? '100%' : '50%', overflow: 'hidden', color: '#f59e0b', whiteSpace: 'nowrap' }}>★</span>
+                )}
+              </span>
+            </span>
+            {/* Left touch zone → half star */}
+            <button type="button"
+              style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%' }}
+              onMouseEnter={() => setHovered(star - 0.5)}
+              onClick={() => onChange(star - 0.5 === value ? 0 : star - 0.5)}
+            />
+            {/* Right touch zone → full star */}
+            <button type="button"
+              style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%' }}
+              onMouseEnter={() => setHovered(star)}
+              onClick={() => onChange(star === value ? 0 : star)}
+            />
+          </div>
         );
       })}
     </div>

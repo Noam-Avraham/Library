@@ -5,11 +5,20 @@ import { REVIEWER_COLORS } from '../data/config.js';
 
 function Stars({ rating }) {
   if (!rating) return null;
-  const pct = Math.min(100, (rating / 5) * 100);
   return (
-    <span dir="ltr" className="relative inline-block text-lg" style={{ letterSpacing: '-1px' }}>
-      <span style={{ color: 'rgba(180,160,100,0.3)' }}>★★★★★</span>
-      <span style={{ position: 'absolute', left: 0, top: 0, width: `${pct}%`, overflow: 'hidden', color: '#f59e0b', whiteSpace: 'nowrap', letterSpacing: '-1px' }}>★★★★★</span>
+    <span dir="ltr" className="inline-flex text-lg">
+      {[1,2,3,4,5].map(i => {
+        const isFull = rating >= i;
+        const isHalf = !isFull && rating >= i - 0.5;
+        return (
+          <span key={i} className="relative inline-block" style={{ width: '1em' }}>
+            <span style={{ color: 'rgba(180,160,100,0.3)' }}>★</span>
+            {(isFull || isHalf) && (
+              <span style={{ position: 'absolute', left: 0, top: 0, width: isFull ? '100%' : '50%', overflow: 'hidden', color: '#f59e0b', whiteSpace: 'nowrap' }}>★</span>
+            )}
+          </span>
+        );
+      })}
     </span>
   );
 }
