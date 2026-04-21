@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { isWrongLocation } from '../data/location.js';
+import { STATUS_DOT } from '../data/statuses.js';
 
 const SPINE_COLORS = [
   { bg: '#6b2737', text: '#fde8ec' }, // בורדו עמוק
@@ -26,14 +27,11 @@ const SPINE_COLORS = [
   { bg: '#5a1f2e', text: '#ffe4e6' }, // יין
 ];
 
-const STATUS_DOT = {
-  'זמין':          '#10b981',
-  'מושאל':         '#f97316',
-  'רשימת משאלות': '#38bdf8',
-};
 
 const SPINE_HEIGHT = 160;
 const SPINE_WIDTH  = 36;
+const POPUP_W      = 190;
+const POPUP_H      = 320;
 
 function getColor(book) {
   const seed = ((book.id || 1) * 13 + (book.title?.charCodeAt(0) || 65) * 7);
@@ -62,8 +60,6 @@ export default function BookSpine({ book, onTransfer, onDelete, onEdit, onReview
     e.stopPropagation();
     if (!open) {
       const rect = spineRef.current.getBoundingClientRect();
-      const POPUP_W = 190;
-      const POPUP_H = 320;
       const left = Math.max(POPUP_W / 2 + 8, Math.min(window.innerWidth - POPUP_W / 2 - 8, rect.left + rect.width / 2));
       // Show above if enough space, otherwise below
       const top = rect.top > POPUP_H + 16
@@ -92,7 +88,7 @@ export default function BookSpine({ book, onTransfer, onDelete, onEdit, onReview
                 left:      `${pos.left}px`,
                 transform: 'translateX(-50%)',
                 zIndex:    9999,
-                width:     '190px',
+                width:     `${POPUP_W}px`,
               }}
               className="bg-white  shadow-2xl p-3 border border-gray-100"
             >

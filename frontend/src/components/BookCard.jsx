@@ -1,35 +1,7 @@
-import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isWrongLocation, expectedHome } from '../data/location.js';
-
-const STATUS_STYLE = {
-  'זמין':          'bg-emerald-500 text-white',
-  'מושאל':         'bg-orange-500 text-white',
-  'רשימת משאלות': 'bg-sky-500 text-white',
-};
-
-function BookCover({ thumbnailUrl, title }) {
-  const [imgError, setImgError] = useState(false);
-
-  if (thumbnailUrl && !imgError) {
-    return (
-      <img
-        src={thumbnailUrl}
-        alt={title}
-        onError={() => setImgError(true)}
-        className="w-full h-full object-cover"
-      />
-    );
-  }
-
-  return (
-    <div className="book-placeholder w-full h-full flex items-center justify-center">
-      <span className="text-white text-4xl font-bold opacity-80 select-none">
-        {title?.charAt(0) || '?'}
-      </span>
-    </div>
-  );
-}
+import { STATUS_STYLE } from '../data/statuses.js';
+import BookCover from './BookCover.jsx';
 
 export default function BookCard({ book, onTransfer, onDelete, onEdit, onReview }) {
   const [showActions, setShowActions] = useState(false);

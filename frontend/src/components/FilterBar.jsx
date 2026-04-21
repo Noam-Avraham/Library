@@ -1,6 +1,5 @@
-const STATUSES = ['זמין', 'מושאל', 'רשימת משאלות'];
-
 import { sortedMembers } from '../data/members.js';
+import { STATUSES } from '../data/statuses.js';
 
 const SORT_OPTIONS = [
   { value: 'location',  label: '📍 לפי מיקום'  },

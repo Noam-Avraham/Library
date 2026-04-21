@@ -140,6 +140,21 @@ async function fetchGoogle(q) {
   });
 }
 
+function mergeNLIAndGoogle(nliBooks, googleBooks) {
+  const merged   = [...nliBooks];
+  const nliIsbns = new Set(nliBooks.map(b => b.isbn).filter(Boolean));
+  for (const g of googleBooks) {
+    if (g.isbn && nliIsbns.has(g.isbn)) {
+      const idx = merged.findIndex(b => b.isbn === g.isbn);
+      if (idx >= 0 && !merged[idx].thumbnailUrl && g.thumbnailUrl)
+        merged[idx].thumbnailUrl = g.thumbnailUrl;
+    } else {
+      merged.push(g);
+    }
+  }
+  return merged;
+}
+
 // ── Ranking ──────────────────────────────────────────────────────────────────
 const isHebrew = s => /[\u0590-\u05FF]/.test(s);
 
@@ -178,19 +193,7 @@ app.get('/api/search', async (req, res) => {
   const nliBooks    = nliRes.status    === 'fulfilled' ? nliRes.value    : [];
   const googleBooks = googleRes.status === 'fulfilled' ? googleRes.value : [];
 
-  // Merge: for same ISBN keep NLI data but patch thumbnail from Google if missing
-  const merged   = [...nliBooks];
-  const nliIsbns = new Set(nliBooks.map(b => b.isbn).filter(Boolean));
-
-  for (const g of googleBooks) {
-    if (g.isbn && nliIsbns.has(g.isbn)) {
-      const idx = merged.findIndex(b => b.isbn === g.isbn);
-      if (idx >= 0 && !merged[idx].thumbnailUrl && g.thumbnailUrl)
-        merged[idx].thumbnailUrl = g.thumbnailUrl;
-    } else {
-      merged.push(g);
-    }
-  }
+  const merged = mergeNLIAndGoogle(nliBooks, googleBooks);
 
   // Score every result
   const scored = merged.map(b => ({ ...b, _score: scoreResult(b, q) }));
@@ -409,17 +412,7 @@ Rules:
             const [nliRes, googleRes] = await Promise.allSettled([fetchNLI(searchQuery), fetchGoogle(searchQuery)]);
             const nliBooks    = nliRes.status    === 'fulfilled' ? nliRes.value    : [];
             const googleBooks = googleRes.status === 'fulfilled' ? googleRes.value : [];
-            const merged = [...nliBooks];
-            const nliIsbns = new Set(nliBooks.map(b => b.isbn).filter(Boolean));
-            for (const g of googleBooks) {
-              if (g.isbn && nliIsbns.has(g.isbn)) {
-                const idx = merged.findIndex(b => b.isbn === g.isbn);
-                if (idx >= 0 && !merged[idx].thumbnailUrl && g.thumbnailUrl)
-                  merged[idx].thumbnailUrl = g.thumbnailUrl;
-              } else {
-                merged.push(g);
-              }
-            }
+            const merged = mergeNLIAndGoogle(nliBooks, googleBooks);
             if (merged.length === 0) return null; // API couldn't find it — likely hallucinated
             const best = merged.sort((a, b) => scoreResult(b, pick.title) - scoreResult(a, pick.title))[0];
             return {
@@ -575,18 +568,7 @@ Instructions:
         const [nliRes, googleRes] = await Promise.allSettled([fetchNLI(query), fetchGoogle(query)]);
         const nliBooks    = nliRes.status    === 'fulfilled' ? nliRes.value    : [];
         const googleBooks = googleRes.status === 'fulfilled' ? googleRes.value : [];
-
-        const merged   = [...nliBooks];
-        const nliIsbns = new Set(nliBooks.map(b => b.isbn).filter(Boolean));
-        for (const g of googleBooks) {
-          if (g.isbn && nliIsbns.has(g.isbn)) {
-            const idx = merged.findIndex(b => b.isbn === g.isbn);
-            if (idx >= 0 && !merged[idx].thumbnailUrl && g.thumbnailUrl)
-              merged[idx].thumbnailUrl = g.thumbnailUrl;
-          } else {
-            merged.push(g);
-          }
-        }
+        const merged      = mergeNLIAndGoogle(nliBooks, googleBooks);
 
         const scored = merged
           .map(b => ({ ...b, _score: scoreResult(b, title) }))

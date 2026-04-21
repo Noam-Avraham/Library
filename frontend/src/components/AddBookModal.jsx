@@ -3,8 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api/index.js';
 import { GENRES } from '../data/genres.js';
 import { sortedMembers, locationOptions } from '../data/members.js';
-
-const STATUSES = ['זמין', 'מושאל', 'רשימת משאלות'];
+import { STATUSES } from '../data/statuses.js';
 
 function Overlay({ onClick }) {
   return (

@@ -2,42 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api/index.js';
 import ReviewModal from './ReviewModal.jsx';
+import Stars from './Stars.jsx';
+import BookCover from './BookCover.jsx';
 import { REVIEWER_NAMES, REVIEWER_COLORS } from '../data/config.js';
 
 const USERS      = REVIEWER_NAMES;
 const USER_COLOR = REVIEWER_COLORS;
 
-function Stars({ rating, size = 'sm' }) {
-  if (!rating) return null;
-  const sz = size === 'lg' ? '1.25rem' : '0.875rem';
-  return (
-    <span dir="ltr" className="inline-flex" style={{ fontSize: sz }}>
-      {[1,2,3,4,5].map(i => {
-        const isFull = rating >= i;
-        const isHalf = !isFull && rating >= i - 0.5;
-        return (
-          <span key={i} style={isHalf ? {
-            background: 'linear-gradient(to right, #f59e0b 50%, rgba(180,160,100,0.3) 50%)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-          } : { color: isFull ? '#f59e0b' : 'rgba(180,160,100,0.3)' }}>★</span>
-        );
-      })}
-    </span>
-  );
-}
-
-function BookCover({ thumbnailUrl, title }) {
-  const [err, setErr] = useState(false);
-  if (thumbnailUrl && !err) {
-    return <img src={thumbnailUrl} alt={title} onError={() => setErr(true)} className="w-full h-full object-cover" />;
-  }
-  return (
-    <div className="w-full h-full flex items-center justify-center "
-      style={{ background: 'linear-gradient(135deg,#4338ca,#1e3a8a)' }}>
-      <span className="text-white text-xl font-bold">{title?.[0] || '?'}</span>
-    </div>
-  );
-}
 
 function ReaderChip({ user, hasRead }) {
   const c = USER_COLOR[user] || { bg: '#f3f4f6', text: '#374151', dot: '#9ca3af' };
@@ -57,6 +28,17 @@ function ReaderChip({ user, hasRead }) {
       {hasRead && <span style={{ fontSize: 10 }}>✓</span>}
     </div>
   );
+}
+
+function matchesFilters(book, bookSummary, search, filterUser, filterMode) {
+  if (search && !book.title.includes(search) && !(book.author || '').includes(search)) return false;
+  if (filterUser) {
+    const readers = bookSummary?.readers ? bookSummary.readers.split(',') : [];
+    if (!readers.includes(filterUser)) return false;
+  }
+  if (filterMode === 'rated')    return bookSummary?.has_rating;
+  if (filterMode === 'reviewed') return bookSummary?.has_review;
+  return true;
 }
 
 export default function ReviewsPage() {
@@ -109,17 +91,7 @@ export default function ReviewsPage() {
   }
 
   const filtered = books
-    .filter(book => {
-      if (search && !book.title.includes(search) && !(book.author || '').includes(search)) return false;
-      const s = summary[book.id];
-      if (filterUser) {
-        const readers = s?.readers ? s.readers.split(',') : [];
-        if (!readers.includes(filterUser)) return false;
-      }
-      if (filterMode === 'rated')    return s?.has_rating;
-      if (filterMode === 'reviewed') return s?.has_review;
-      return true;
-    })
+    .filter(book => matchesFilters(book, summary[book.id], search, filterUser, filterMode))
     .sort((a, b) => {
       const ra = summary[a.id]?.avg_rating ? Number(summary[a.id].avg_rating) : -1;
       const rb = summary[b.id]?.avg_rating ? Number(summary[b.id].avg_rating) : -1;
@@ -134,8 +106,8 @@ export default function ReviewsPage() {
       {/* Stats bar */}
       <div className="flex flex-wrap gap-4 mb-6">
         {USERS.map(u => {
-          const count = Object.values(summary).filter(s =>
-            s.readers?.split(',').includes(u)
+          const count = Object.values(summary).filter(bookSummary =>
+            bookSummary.readers?.split(',').includes(u)
           ).length;
           const c = USER_COLOR[u] || {};
           return (

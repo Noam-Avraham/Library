@@ -1,25 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api/index.js';
+import Stars from './Stars.jsx';
+import BookCover from './BookCover.jsx';
 import { REVIEWER_COLORS } from '../data/config.js';
 
-function Stars({ rating }) {
-  if (!rating) return null;
-  return (
-    <span dir="ltr" className="inline-flex text-lg">
-      {[1,2,3,4,5].map(i => {
-        const isFull = rating >= i;
-        const isHalf = !isFull && rating >= i - 0.5;
-        return (
-          <span key={i} style={isHalf ? {
-            background: 'linear-gradient(to right, #f59e0b 50%, rgba(180,160,100,0.3) 50%)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-          } : { color: isFull ? '#f59e0b' : 'rgba(180,160,100,0.3)' }}>★</span>
-        );
-      })}
-    </span>
-  );
-}
 
 export default function BookReviewsModal({ book, open, onClose, onAddReview }) {
   const [reviews, setReviews] = useState([]);
@@ -95,7 +80,7 @@ export default function BookReviewsModal({ book, open, onClose, onAddReview }) {
                         >✕</button>
                       </div>
                       {r.rating
-                        ? <Stars rating={r.rating} />
+                        ? <Stars rating={r.rating} size="lg" />
                         : <span className="text-xs font-medium" style={{ color: c.dot }}>קרא ✓</span>
                       }
                       {r.review_text && (

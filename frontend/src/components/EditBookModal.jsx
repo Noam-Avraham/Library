@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GENRES } from '../data/genres.js';
 import { sortedMembers, locationOptions } from '../data/members.js';
-
-const STATUSES = ['זמין', 'מושאל', 'רשימת משאלות'];
+import { STATUSES } from '../data/statuses.js';
 
 export default function EditBookModal({ open, book, familyMembers, onClose, onSave }) {
   const [form,     setForm]     = useState({});

@@ -2,18 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api/index.js';
 import { REVIEWER_NAMES } from '../data/config.js';
-
-function BookCover({ thumbnailUrl, title }) {
-  const [err, setErr] = useState(false);
-  if (thumbnailUrl && !err)
-    return <img src={thumbnailUrl} alt={title} onError={() => setErr(true)} className="w-full h-full object-cover" />;
-  return (
-    <div className="w-full h-full flex items-center justify-center"
-      style={{ background: 'linear-gradient(135deg,#1e3a8a,#4338ca)' }}>
-      <span className="text-white text-base font-bold">{title?.[0] || '?'}</span>
-    </div>
-  );
-}
+import BookCover from './BookCover.jsx';
 
 function WishlistButton({ title, author }) {
   const [state, setState] = useState('idle'); // idle | loading | done
