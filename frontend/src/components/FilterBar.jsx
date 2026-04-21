@@ -14,7 +14,7 @@ export default function FilterBar({ filters, familyMembers, onChange, onReset, v
   const members = sortedMembers(familyMembers);
 
   return (
-    <div className="bg-white border-b border-amber-100 shadow-sm sticky top-0 z-10">
+    <div className="bg-white border-b border-amber-100 shadow-sm sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 sm:py-3 flex flex-col gap-2">
 
         {/* Row 1: Search + View Toggle */}
