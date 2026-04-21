@@ -22,28 +22,24 @@ function StarRating({ value, onChange }) {
   const display = hovered || value;
 
   return (
+    <>
     <div className="flex justify-center" dir="ltr" style={{ gap: 6 }}>
       {[1, 2, 3, 4, 5].map(star => {
         const isFull = display >= star;
         const isHalf = !isFull && display >= star - 0.5;
         return (
           <div key={star} className="relative" style={{ width: 44, height: 44, flexShrink: 0 }} onMouseLeave={() => setHovered(0)}>
-            {/* Star visual — pointer-events none so buttons underneath receive events */}
-            <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', pointerEvents: 'none' }}>
-              <span className="relative inline-block" style={{ width: '1em', lineHeight: 1 }}>
-                <span style={{ color: 'rgba(255,255,255,0.15)' }}>★</span>
-                {(isFull || isHalf) && (
-                  <span style={{ position: 'absolute', left: 0, top: 0, width: isFull ? '100%' : '50%', overflow: 'hidden', color: '#f59e0b', whiteSpace: 'nowrap' }}>★</span>
-                )}
-              </span>
+            <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', pointerEvents: 'none' }}>
+              <span style={isHalf ? {
+                background: 'linear-gradient(to right, #f59e0b 50%, rgba(255,255,255,0.15) 50%)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              } : { color: isFull ? '#f59e0b' : 'rgba(255,255,255,0.15)' }}>★</span>
             </span>
-            {/* Left touch zone → half star */}
             <button type="button"
               style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%' }}
               onMouseEnter={() => setHovered(star - 0.5)}
               onClick={() => onChange(star - 0.5 === value ? 0 : star - 0.5)}
             />
-            {/* Right touch zone → full star */}
             <button type="button"
               style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%' }}
               onMouseEnter={() => setHovered(star)}
@@ -53,32 +49,67 @@ function StarRating({ value, onChange }) {
         );
       })}
     </div>
+    <p className="text-center mt-1" style={{ color: '#4b5563', fontSize: '0.65rem' }}>לחץ על חצי שמאל של כוכב לחצי דירוג</p>
+    </>
   );
 }
 
 const STEP_LABELS = ['מי קורא/ת?', 'דירוג', 'ביקורת'];
 
 export default function ReviewModal({ open, book, existingReview, onClose, onSaved }) {
-  const [userName, setUserName] = useState('');
-  const [rating, setRating]     = useState(0);
-  const [reviewText, setReviewText] = useState('');
-  const [saving, setSaving]     = useState(false);
+  const [userName, setUserName]         = useState('');
+  const [rating, setRating]             = useState(0);
+  const [reviewText, setReviewText]     = useState('');
+  const [saving, setSaving]             = useState(false);
+  const [deleting, setDeleting]         = useState(false);
+  const [existingData, setExistingData] = useState(null);
 
   useEffect(() => {
     if (open) {
       setUserName(existingReview?.user_name || '');
       setRating(existingReview?.rating || 0);
       setReviewText(existingReview?.review_text || '');
+      setExistingData(null);
     }
   }, [open, existingReview]);
+
+  // When user is selected, look up if they already have a review for this book
+  useEffect(() => {
+    if (!userName || !book?.id) { setExistingData(null); return; }
+    api.getReviews(book.id).then(reviews => {
+      const found = reviews.find(r => r.user_name === userName) || null;
+      setExistingData(found);
+      if (found) {
+        setRating(found.rating || 0);
+        setReviewText(found.review_text || '');
+      } else {
+        setRating(0);
+        setReviewText('');
+      }
+    }).catch(() => {});
+  }, [userName, book?.id]);
+
+  async function handleDelete() {
+    if (!existingData) return;
+    setDeleting(true);
+    try {
+      await api.deleteReview(existingData.id);
+      onSaved();
+      onClose();
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   const step = !userName ? 1 : rating === 0 ? 2 : 3;
   const c = USER_COLOR[userName];
 
   const saveLabel = saving ? 'שומר...'
-    : !rating     ? '✓ סמן כנקרא'
-    : !reviewText ? '✓ שמור דירוג'
-    :               '✓ שמור ביקורת';
+    : existingData && !rating     ? '✓ עדכן — בטל דירוג'
+    : existingData                ? '✓ עדכן ביקורת'
+    : !rating                     ? '✓ סמן כנקרא'
+    : !reviewText                 ? '✓ שמור דירוג'
+    :                               '✓ שמור ביקורת';
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -238,12 +269,23 @@ export default function ReviewModal({ open, book, existingReview, onClose, onSav
 
               <button
                 type="submit"
-                disabled={!userName || saving}
+                disabled={!userName || saving || deleting}
                 className="w-full py-3  font-bold text-sm transition-all disabled:opacity-30"
                 style={{ background: c ? `linear-gradient(135deg, ${c.active}, ${c.active}cc)` : 'linear-gradient(135deg, #d97706, #b45309)', color: 'white' }}
               >
                 {saveLabel}
               </button>
+              {existingData && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting || saving}
+                  className="w-full py-2 font-semibold text-sm transition-all disabled:opacity-30 mt-2"
+                  style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}
+                >
+                  {deleting ? 'מוחק...' : 'מחק ביקורת / בטל סימון קריאה'}
+                </button>
+              )}
             </form>
           </motion.div>
         </motion.div>

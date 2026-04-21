@@ -11,12 +11,10 @@ function Stars({ rating }) {
         const isFull = rating >= i;
         const isHalf = !isFull && rating >= i - 0.5;
         return (
-          <span key={i} className="relative inline-block" style={{ width: '1em' }}>
-            <span style={{ color: 'rgba(180,160,100,0.3)' }}>★</span>
-            {(isFull || isHalf) && (
-              <span style={{ position: 'absolute', left: 0, top: 0, width: isFull ? '100%' : '50%', overflow: 'hidden', color: '#f59e0b', whiteSpace: 'nowrap' }}>★</span>
-            )}
-          </span>
+          <span key={i} style={isHalf ? {
+            background: 'linear-gradient(to right, #f59e0b 50%, rgba(180,160,100,0.3) 50%)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+          } : { color: isFull ? '#f59e0b' : 'rgba(180,160,100,0.3)' }}>★</span>
         );
       })}
     </span>

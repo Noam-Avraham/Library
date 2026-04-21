@@ -9,19 +9,17 @@ const USER_COLOR = REVIEWER_COLORS;
 
 function Stars({ rating, size = 'sm' }) {
   if (!rating) return null;
-  const sz = size === 'lg' ? 'text-xl' : 'text-sm';
+  const sz = size === 'lg' ? '1.25rem' : '0.875rem';
   return (
-    <span dir="ltr" className={`inline-flex ${sz}`}>
+    <span dir="ltr" className="inline-flex" style={{ fontSize: sz }}>
       {[1,2,3,4,5].map(i => {
         const isFull = rating >= i;
         const isHalf = !isFull && rating >= i - 0.5;
         return (
-          <span key={i} className="relative inline-block" style={{ width: '1em' }}>
-            <span style={{ color: 'rgba(180,160,100,0.3)' }}>★</span>
-            {(isFull || isHalf) && (
-              <span style={{ position: 'absolute', left: 0, top: 0, width: isFull ? '100%' : '50%', overflow: 'hidden', color: '#f59e0b', whiteSpace: 'nowrap' }}>★</span>
-            )}
-          </span>
+          <span key={i} style={isHalf ? {
+            background: 'linear-gradient(to right, #f59e0b 50%, rgba(180,160,100,0.3) 50%)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+          } : { color: isFull ? '#f59e0b' : 'rgba(180,160,100,0.3)' }}>★</span>
         );
       })}
     </span>

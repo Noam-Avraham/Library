@@ -63,13 +63,13 @@ export default function BookSpine({ book, onTransfer, onDelete, onEdit, onReview
     if (!open) {
       const rect = spineRef.current.getBoundingClientRect();
       const POPUP_W = 190;
-      const POPUP_H = 260;
-      const rawLeft   = rect.left + rect.width / 2;
-      const rawBottom = window.innerHeight - rect.top + 10;
-      setPos({
-        bottom: Math.min(rawBottom, window.innerHeight - POPUP_H - 8),
-        left:   Math.max(POPUP_W / 2 + 8, Math.min(window.innerWidth - POPUP_W / 2 - 8, rawLeft)),
-      });
+      const POPUP_H = 320;
+      const left = Math.max(POPUP_W / 2 + 8, Math.min(window.innerWidth - POPUP_W / 2 - 8, rect.left + rect.width / 2));
+      // Show above if enough space, otherwise below
+      const top = rect.top > POPUP_H + 16
+        ? rect.top - POPUP_H - 8
+        : rect.bottom + 8;
+      setPos({ top: Math.max(8, Math.min(window.innerHeight - POPUP_H - 8, top)), left });
     }
     setOpen(prev => !prev);
   };
@@ -88,7 +88,7 @@ export default function BookSpine({ book, onTransfer, onDelete, onEdit, onReview
               transition={{ duration: 0.15 }}
               style={{
                 position:  'fixed',
-                bottom:    `${pos.bottom}px`,
+                top:       `${pos.top}px`,
                 left:      `${pos.left}px`,
                 transform: 'translateX(-50%)',
                 zIndex:    9999,
