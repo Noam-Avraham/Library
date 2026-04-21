@@ -93,21 +93,9 @@ async function init() {
 
   // Seed from family.config.json
   const NEW_MEMBERS = familyConfig.owners.map(o => o.name);
-  const oldNames = get("SELECT COUNT(*) as c FROM family_members WHERE name IN ('אברהם','שרה','יצחק','רבקה')");
-  if (oldNames?.c > 0) _db.run('DELETE FROM family_members');
-
   const memberCount = get('SELECT COUNT(*) as c FROM family_members');
   if (!memberCount?.c) {
     NEW_MEMBERS.forEach(name => _db.run('INSERT OR IGNORE INTO family_members (name) VALUES (?)', [name]));
-  }
-
-  // Migration: merge שייקה + מיקי → משפחת אברהם
-  const hasOldNames = get("SELECT COUNT(*) as c FROM family_members WHERE name IN ('שייקה','מיקי')");
-  if (hasOldNames?.c > 0) {
-    _db.run("INSERT OR IGNORE INTO family_members (name) VALUES ('משפחת אברהם')");
-    _db.run("UPDATE books SET owner='משפחת אברהם'         WHERE owner         IN ('שייקה','מיקי')");
-    _db.run("UPDATE books SET current_holder='משפחת אברהם' WHERE current_holder IN ('שייקה','מיקי')");
-    _db.run("DELETE FROM family_members WHERE name IN ('שייקה','מיקי')");
   }
 
   save();
