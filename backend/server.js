@@ -368,9 +368,14 @@ BOOKS THIS PERSON HAS READ:
 ${readList}
 
 Return ONLY a JSON array, no other text:
-[{"title": "...", "author": "...", "reason": "<one sentence in Hebrew explaining why they'd enjoy it>"}]
+[{"title": "...", "author": "...", "original_title": "...", "reason": "<one sentence in Hebrew explaining why they'd enjoy it>"}]
 
-Recommend real, well-known books that match their taste. Recommend ONLY books originally written in Hebrew or widely available in Hebrew translation. Return exactly 5.`,
+Rules:
+- Recommend ONLY books that have an official published Hebrew translation (not just "could be translated")
+- "title" = the Hebrew title as published in Israel
+- "original_title" = the original title in its original language (use this if the book was not originally in Hebrew)
+- Only include books you are highly confident exist in Hebrew translation
+- Return exactly 5.`,
         }],
       });
 
@@ -379,11 +384,12 @@ Recommend real, well-known books that match their taste. Recommend ONLY books or
       const picks = match ? JSON.parse(match[0]) : [];
 
       // Enrich each recommendation with cover/ISBN from Google Books + NLI
-      const recommendations = await Promise.all(
+      // Search by original_title (more reliable) then fall back to Hebrew title
+      const enriched = await Promise.all(
         picks.map(async pick => {
-          const query = [pick.title, pick.author].filter(Boolean).join(' ');
+          const searchQuery = [pick.original_title || pick.title, pick.author].filter(Boolean).join(' ');
           try {
-            const [nliRes, googleRes] = await Promise.allSettled([fetchNLI(query), fetchGoogle(query)]);
+            const [nliRes, googleRes] = await Promise.allSettled([fetchNLI(searchQuery), fetchGoogle(searchQuery)]);
             const nliBooks    = nliRes.status    === 'fulfilled' ? nliRes.value    : [];
             const googleBooks = googleRes.status === 'fulfilled' ? googleRes.value : [];
             const merged = [...nliBooks];
@@ -397,6 +403,7 @@ Recommend real, well-known books that match their taste. Recommend ONLY books or
                 merged.push(g);
               }
             }
+            if (merged.length === 0) return null; // API couldn't find it — likely hallucinated
             const best = merged.sort((a, b) => scoreResult(b, pick.title) - scoreResult(a, pick.title))[0];
             return {
               title:        best?.title        || pick.title,
@@ -407,10 +414,11 @@ Recommend real, well-known books that match their taste. Recommend ONLY books or
               reason:       pick.reason,
             };
           } catch {
-            return { title: pick.title, author: pick.author, thumbnailUrl: '', reason: pick.reason };
+            return null;
           }
         })
       );
+      const recommendations = enriched.filter(Boolean);
 
       return res.json({ recommendations, reason: 'ok', mode: 'external' });
     } catch (err) {
