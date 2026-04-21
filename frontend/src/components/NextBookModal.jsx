@@ -65,6 +65,8 @@ export default function NextBookModal({ open, onClose }) {
       setRecMode(mode);
       if (data.reason === 'no_history') {
         setNoHistoryMsg('לא נמצאו ביקורות עבורך — קרא ספרים ודרג אותם כדי לקבל המלצות.');
+      } else if (data.reason === 'no_ratings') {
+        setNoHistoryMsg('קראת ספרים אבל לא דירגת אף אחד — דרג לפחות ספר אחד כדי שה-AI יוכל להבין את הטעמים שלך.');
       } else if (data.reason === 'all_read') {
         setNoHistoryMsg('קראת את כל הספרים בספרייה! נסה את מצב "ספר חדש".');
       } else {

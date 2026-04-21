@@ -9,11 +9,12 @@ const USER_COLOR = REVIEWER_COLORS;
 
 function Stars({ rating, size = 'sm' }) {
   if (!rating) return null;
-  const r = Math.round(rating);
   const sz = size === 'lg' ? 'text-xl' : 'text-sm';
+  const pct = Math.min(100, (rating / 5) * 100);
   return (
-    <span dir="ltr" className={sz} style={{ color: '#f59e0b', letterSpacing: '-1px' }}>
-      {'★'.repeat(r)}{'☆'.repeat(5 - r)}
+    <span dir="ltr" className={`relative inline-block ${sz}`} style={{ letterSpacing: '-1px' }}>
+      <span style={{ color: 'rgba(180,160,100,0.3)' }}>★★★★★</span>
+      <span style={{ position: 'absolute', left: 0, top: 0, width: `${pct}%`, overflow: 'hidden', color: '#f59e0b', whiteSpace: 'nowrap', letterSpacing: '-1px' }}>★★★★★</span>
     </span>
   );
 }

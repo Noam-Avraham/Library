@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api/index.js';
 import { DEFAULT_OWNER } from '../data/config.js';
@@ -83,6 +83,8 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
   const [matchOverride, setMatchOverride] = useState({});
   const [owner, setOwner]               = useState(DEFAULT_OWNER);
   const [location, setLocation]         = useState('בית');
+  const [customLocation, setCustomLocation] = useState('');
+  const [locations, setLocations]       = useState([]);
   const [adding, setAdding]             = useState(false);
   const [error, setError]               = useState('');
   const [dragging, setDragging]         = useState(false);
@@ -91,10 +93,19 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
   const reset = () => {
     setPhase('upload'); setImagePreview(null); setImageBase64(null);
     setResults([]); setSelected({}); setMatchOverride({});
-    setError(''); setAdding(false);
+    setError(''); setAdding(false); setCustomLocation('');
   };
 
   const handleClose = () => { reset(); onClose(); };
+
+  useEffect(() => {
+    if (open) {
+      api.getLocations().then(locs => {
+        setLocations(locs);
+        if (locs.length > 0 && !locs.includes(location)) setLocation(locs[0]);
+      }).catch(() => {});
+    }
+  }, [open]);
 
   const loadFile = (file) => {
     if (!file) return;
@@ -134,6 +145,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
 
   const handleAdd = async () => {
     setAdding(true);
+    const finalLocation = location === '__custom__' ? (customLocation || 'בית') : location;
     const toAdd = results
       .filter((_, i) => selected[i])
       .map((item, i) => {
@@ -149,7 +161,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
           publisher:    match.publisher || '',
           owner,
           current_holder: owner,
-          location,
+          location: finalLocation,
           status: 'זמין',
         };
       });
@@ -216,12 +228,29 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
                   </div>
                   <div className="flex-1">
                     <label className="text-xs mb-1 block" style={{ color: '#94a3b8' }}>מיקום</label>
-                    <input
-                      value={location}
-                      onChange={e => setLocation(e.target.value)}
+                    <select
+                      value={location === '__custom__' ? '__custom__' : location}
+                      onChange={e => {
+                        if (e.target.value === '__custom__') { setLocation('__custom__'); setCustomLocation(''); }
+                        else setLocation(e.target.value);
+                      }}
                       className="w-full px-3 py-2 text-sm"
                       style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}
-                    />
+                    >
+                      {locations.map(l => <option key={l} value={l}>{l}</option>)}
+                      {locations.length === 0 && <option value="בית">בית</option>}
+                      <option value="__custom__">אחר...</option>
+                    </select>
+                    {location === '__custom__' && (
+                      <input
+                        autoFocus
+                        value={customLocation}
+                        onChange={e => setCustomLocation(e.target.value)}
+                        placeholder="הזן מיקום..."
+                        className="w-full px-3 py-2 text-sm mt-1"
+                        style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -248,6 +277,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
                       <p className="text-sm font-medium" style={{ color: '#f5e6cc' }}>גרור תמונה לכאן או לחץ לבחירה</p>
                       <p className="text-xs" style={{ color: '#6b7280' }}>תמונת מדף ספרים — יזוהו ספרים אוטומטית</p>
                       <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>שימו לב שהאיכות טובה ושניתן לראות את הכותרת</p>
+                      <p className="text-xs mt-0.5" style={{ color: '#6b7280' }}>גודל מקסימלי: 20MB</p>
                     </>
                   )}
                 </div>

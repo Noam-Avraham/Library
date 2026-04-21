@@ -5,10 +5,11 @@ import { REVIEWER_COLORS } from '../data/config.js';
 
 function Stars({ rating }) {
   if (!rating) return null;
-  const r = Math.round(rating);
+  const pct = Math.min(100, (rating / 5) * 100);
   return (
-    <span dir="ltr" className="text-lg" style={{ color: '#f59e0b', letterSpacing: '-1px' }}>
-      {'★'.repeat(r)}{'☆'.repeat(5 - r)}
+    <span dir="ltr" className="relative inline-block text-lg" style={{ letterSpacing: '-1px' }}>
+      <span style={{ color: 'rgba(180,160,100,0.3)' }}>★★★★★</span>
+      <span style={{ position: 'absolute', left: 0, top: 0, width: `${pct}%`, overflow: 'hidden', color: '#f59e0b', whiteSpace: 'nowrap', letterSpacing: '-1px' }}>★★★★★</span>
     </span>
   );
 }
@@ -24,6 +25,11 @@ export default function BookReviewsModal({ book, open, onClose, onAddReview }) {
       .then(setReviews)
       .finally(() => setLoading(false));
   }, [open, book]);
+
+  async function handleDelete(reviewId) {
+    await api.deleteReview(reviewId);
+    setReviews(prev => prev.filter(r => r.id !== reviewId));
+  }
 
   if (!open || !book) return null;
 
@@ -69,9 +75,17 @@ export default function BookReviewsModal({ book, open, onClose, onAddReview }) {
                   const c = REVIEWER_COLORS[r.user_name] || { bg: '#f9fafb', text: '#374151', dot: '#9ca3af' };
                   return (
                     <div key={r.id} className="p-3" style={{ background: c.bg, border: `1.5px solid ${c.dot}30` }}>
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: c.dot }} />
-                        <span className="font-bold text-sm" style={{ color: c.text }}>{r.user_name}</span>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: c.dot }} />
+                          <span className="font-bold text-sm" style={{ color: c.text }}>{r.user_name}</span>
+                        </div>
+                        <button
+                          onClick={() => handleDelete(r.id)}
+                          className="text-xs hover:text-red-500 transition-colors"
+                          style={{ color: '#d1d5db' }}
+                          title="בטל סימון קריאה"
+                        >✕</button>
                       </div>
                       {r.rating
                         ? <Stars rating={r.rating} />

@@ -4,11 +4,21 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const Anthropic = require('@anthropic-ai/sdk');
+const rateLimit = require('express-rate-limit');
 const { init, run, get, all } = require('./db');
 
 const app = express();
+app.disable('x-powered-by');
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
+
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: { error: 'יותר מדי בקשות — נסה שוב עוד דקה' },
+});
+app.use('/api/scan-shelf', aiLimiter);
+app.use('/api/next-book',  aiLimiter);
 
 const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes';
 const NLI_API          = 'https://api.nli.org.il/openlibrary/search';
@@ -255,6 +265,10 @@ app.get('/api/family', (req, res) => {
   res.json(all('SELECT * FROM family_members ORDER BY name'));
 });
 
+app.get('/api/locations', (req, res) => {
+  res.json(all('SELECT DISTINCT location FROM books WHERE location IS NOT NULL AND location != \'\' ORDER BY location').map(r => r.location));
+});
+
 app.post('/api/family', (req, res) => {
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: 'Name required' });
@@ -348,6 +362,9 @@ app.get('/api/next-book', async (req, res) => {
   if (readBooks.length === 0)
     return res.json({ recommendations: [], reason: 'no_history' });
 
+  if (readBooks.every(b => !b.rating))
+    return res.json({ recommendations: [], reason: 'no_ratings' });
+
   const readList = readBooks.map(b =>
     `- "${b.title}"${b.author ? ` / ${b.author}` : ''}${b.genre ? ` [${b.genre}]` : ''}${b.rating ? ` — ${b.rating}/5` : ''}${b.review_text ? `: "${b.review_text}"` : ''}`
   ).join('\n');
@@ -387,7 +404,7 @@ Rules:
       // Search by original_title (more reliable) then fall back to Hebrew title
       const enriched = await Promise.all(
         picks.map(async pick => {
-          const searchQuery = [pick.original_title || pick.title, pick.author].filter(Boolean).join(' ');
+          const searchQuery = [pick.title, pick.author].filter(Boolean).join(' ');
           try {
             const [nliRes, googleRes] = await Promise.allSettled([fetchNLI(searchQuery), fetchGoogle(searchQuery)]);
             const nliBooks    = nliRes.status    === 'fulfilled' ? nliRes.value    : [];
@@ -481,6 +498,7 @@ Pick the best matches based on genres, authors, themes, and their ratings/review
 app.post('/api/scan-shelf', async (req, res) => {
   const { imageBase64, mediaType = 'image/jpeg' } = req.body;
   if (!imageBase64) return res.status(400).json({ error: 'imageBase64 required' });
+  if (imageBase64.length > 15_000_000) return res.status(400).json({ error: 'התמונה גדולה מדי — מקסימום 20MB' });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });

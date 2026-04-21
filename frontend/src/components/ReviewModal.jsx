@@ -8,23 +8,53 @@ const USER_COLOR = Object.fromEntries(
   Object.entries(REVIEWER_COLORS).map(([name, c]) => [name, { ...c, active: c.dot }])
 );
 
+function ratingLabel(r) {
+  if (r >= 5) return 'מצוין';
+  if (r >= 4) return 'טוב';
+  if (r >= 3) return 'בסדר';
+  if (r >= 2) return 'לא טוב';
+  if (r > 0)  return 'גרוע';
+  return '';
+}
+
 function StarRating({ value, onChange }) {
   const [hovered, setHovered] = useState(0);
+  const display = hovered || value;
+
+  function halfVal(e, star) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return (e.clientX - rect.left) < rect.width / 2 ? star - 0.5 : star;
+  }
+
   return (
-    <div className="flex gap-2 justify-center" dir="ltr">
-      {[1, 2, 3, 4, 5].map(star => (
-        <button
-          key={star}
-          type="button"
-          onClick={() => onChange(star === value ? 0 : star)}
-          onMouseEnter={() => setHovered(star)}
-          onMouseLeave={() => setHovered(0)}
-          className="text-4xl transition-all hover:scale-125 active:scale-95"
-          style={{ color: star <= (hovered || value) ? '#f59e0b' : 'rgba(255,255,255,0.15)' }}
-        >
-          ★
-        </button>
-      ))}
+    <div className="flex justify-center" dir="ltr" style={{ gap: 6 }}>
+      {[1, 2, 3, 4, 5].map(star => {
+        let fillPct = 0;
+        if (display >= star) fillPct = 100;
+        else if (display >= star - 0.5) fillPct = 50;
+
+        return (
+          <button
+            key={star}
+            type="button"
+            onMouseMove={e => setHovered(halfVal(e, star))}
+            onMouseLeave={() => setHovered(0)}
+            onClick={e => { const v = halfVal(e, star); onChange(v === value ? 0 : v); }}
+            onTouchEnd={e => {
+              e.preventDefault();
+              const t = e.changedTouches[0];
+              const rect = e.currentTarget.getBoundingClientRect();
+              const v = (t.clientX - rect.left) < rect.width / 2 ? star - 0.5 : star;
+              onChange(v === value ? 0 : v);
+            }}
+            className="transition-transform hover:scale-110 active:scale-95"
+            style={{ position: 'relative', width: 40, height: 40, flexShrink: 0, fontSize: '2rem', lineHeight: '40px' }}
+          >
+            <span style={{ position: 'absolute', left: 0, top: 0, width: '100%', textAlign: 'left', color: 'rgba(255,255,255,0.15)' }}>★</span>
+            <span style={{ position: 'absolute', left: 0, top: 0, width: `${fillPct}%`, overflow: 'hidden', textAlign: 'left', color: '#f59e0b', whiteSpace: 'nowrap' }}>★</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -173,7 +203,7 @@ export default function ReviewModal({ open, book, existingReview, onClose, onSav
                   >
                     <div className="pt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
                       <p className="text-xs text-center mb-3 mt-3" style={{ color: '#6b7280' }}>
-                        {rating === 0 ? 'בחר דירוג — אופציונלי' : `${['', 'גרוע', 'לא טוב', 'בסדר', 'טוב', 'מצוין'][rating]} (${rating}/5)`}
+                        {rating === 0 ? 'בחר דירוג — אופציונלי' : `${ratingLabel(rating)} (${rating}/5)`}
                       </p>
                       <StarRating value={rating} onChange={setRating} />
                     </div>

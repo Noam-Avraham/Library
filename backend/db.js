@@ -1,7 +1,12 @@
 const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
-const familyConfig = require('../family.config.json');
+let familyConfig;
+try {
+  familyConfig = require('../family.config.json');
+} catch {
+  throw new Error('family.config.json not found — copy family.config.example.json and fill in your family details.');
+}
 
 const DB_PATH = path.join(__dirname, 'library.db');
 
@@ -90,6 +95,11 @@ async function init() {
       name TEXT NOT NULL UNIQUE
     )
   `);
+
+  _db.run('CREATE INDEX IF NOT EXISTS idx_reviews_book_id   ON reviews(book_id)');
+  _db.run('CREATE INDEX IF NOT EXISTS idx_reviews_user_name ON reviews(user_name)');
+  _db.run('CREATE INDEX IF NOT EXISTS idx_books_owner       ON books(owner)');
+  _db.run('CREATE INDEX IF NOT EXISTS idx_books_location    ON books(location)');
 
   // Seed from family.config.json
   const NEW_MEMBERS = familyConfig.owners.map(o => o.name);
