@@ -108,13 +108,21 @@ function ShelfView({ books, sortBy, onTransfer, onDelete, onEdit, onReview }) {
 
   const groups = groupBooks(books, sortBy, shelfSize);
 
+  // Split every group into rows of shelfSize so books never overflow horizontally
+  const rows = [];
+  groups.forEach(([label, groupBooks]) => {
+    for (let i = 0; i < groupBooks.length; i += shelfSize) {
+      rows.push({ label: i === 0 ? label : '', books: groupBooks.slice(i, i + shelfSize) });
+    }
+  });
+
   return (
     <div ref={containerRef} className=" overflow-hidden shadow-xl" style={{ border: '1px solid #8B5E3C44', background: '#fdf6ee' }}>
-      {groups.map(([label, shelfBooks], i) => (
+      {rows.map((row, i) => (
         <ShelfRow
-          key={label || i}
-          label={label}
-          books={shelfBooks}
+          key={i}
+          label={row.label}
+          books={row.books}
           onTransfer={onTransfer}
           onDelete={onDelete}
           onEdit={onEdit}

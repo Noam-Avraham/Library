@@ -31,7 +31,7 @@ const SPINE_COLORS = [
 const SPINE_HEIGHT = 160;
 const SPINE_WIDTH  = 36;
 const POPUP_W      = 190;
-const POPUP_H      = 320;
+const POPUP_H      = 420;
 
 function getColor(book) {
   const seed = ((book.id || 1) * 13 + (book.title?.charCodeAt(0) || 65) * 7);
