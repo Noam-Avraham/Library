@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isWrongLocation, expectedHome } from '../data/location.js';
 import { STATUS_STYLE } from '../data/statuses.js';
