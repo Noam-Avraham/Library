@@ -42,7 +42,7 @@ export const api = {
 
   // Next book recommendation
   getNextBook: (userName, mode = 'library') => request(`/next-book?user_name=${encodeURIComponent(userName)}&mode=${mode}`),
-  addToWishlist: (title, author) => request('/books', { method: 'POST', body: JSON.stringify({ title, author, status: 'רשימת משאלות', owner: '', current_holder: '', location: '' }) }),
+  addToWishlist: (title, author) => request('/books', { method: 'POST', body: JSON.stringify({ title, author, status: 'רשימת משאלות', owner: '', current_holder: '', location: 'רשימת משאלות' }) }),
 
   // Locations
   getLocations: () => request('/locations'),
