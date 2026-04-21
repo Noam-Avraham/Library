@@ -147,6 +147,9 @@ export default function App() {
           "אם תאכל שלוש ארוחות ביום תהיה שמן. אם תקרא שלושה ספרים ביום תהיה חכם."
         </p>
         <p className="text-xs mt-1 font-semibold" style={{ color: '#6B3F20' }}>~ שמעון פרס</p>
+        <p className="mt-4" style={{ color: '#b8956a', fontSize: '0.6rem', lineHeight: '1.6' }}>
+          האתר נוצר ע״י נעם אברהם · התמונות נלקחו ממקורות מידע חופשיים כגון ויקיפדיה ומאגר המידע של הספרייה הלאומית · במידה וישנה הפרה של זכויות יוצרים באתר זה נא לפנות ליוצר האתר
+        </p>
       </footer>
 
       <ShelfScanner
