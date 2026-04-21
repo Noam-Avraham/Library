@@ -89,7 +89,8 @@ function ShelfRow({ label, books, onTransfer, onDelete, onEdit, onReview }) {
 // ── Shelf view ────────────────────────────────────────────────────────────────
 function ShelfView({ books, sortBy, onTransfer, onDelete, onEdit, onReview }) {
   const containerRef = useRef(null);
-  const [shelfSize, setShelfSize] = useState(14);
+  const [shelfSize,  setShelfSize]  = useState(14);
+  const [collapsed,  setCollapsed]  = useState({});
 
   const measure = useCallback(() => {
     if (!containerRef.current) return;
@@ -108,27 +109,49 @@ function ShelfView({ books, sortBy, onTransfer, onDelete, onEdit, onReview }) {
 
   const groups = groupBooks(books, sortBy, shelfSize);
 
-  // Split every group into rows of shelfSize so books never overflow horizontally
-  const rows = [];
-  groups.forEach(([label, groupBooks]) => {
-    for (let i = 0; i < groupBooks.length; i += shelfSize) {
-      rows.push({ label: i === 0 ? label : '', books: groupBooks.slice(i, i + shelfSize) });
-    }
-  });
+  const toggle = (key) => setCollapsed(c => ({ ...c, [key]: !c[key] }));
 
   return (
     <div ref={containerRef} className=" overflow-hidden shadow-xl" style={{ border: '1px solid #8B5E3C44', background: '#fdf6ee' }}>
-      {rows.map((row, i) => (
-        <ShelfRow
-          key={i}
-          label={row.label}
-          books={row.books}
-          onTransfer={onTransfer}
-          onDelete={onDelete}
-          onEdit={onEdit}
-          onReview={onReview}
-        />
-      ))}
+      {groups.map(([label, groupBooks], gi) => {
+        const key = label || String(gi);
+        const isCollapsed = !!collapsed[key];
+        const chunks = [];
+        for (let i = 0; i < groupBooks.length; i += shelfSize)
+          chunks.push(groupBooks.slice(i, i + shelfSize));
+
+        return (
+          <div key={key}>
+            {label && (
+              <div
+                className="flex items-center gap-3 px-8 pt-5 pb-1 cursor-pointer select-none"
+                onClick={() => toggle(key)}
+              >
+                <motion.span
+                  animate={{ rotate: isCollapsed ? -90 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-xs flex-shrink-0"
+                  style={{ color: '#8B5E3C', display: 'inline-block' }}
+                >▼</motion.span>
+                <span className="text-sm font-bold tracking-wide" style={{ color: '#4A2810' }}>{label}</span>
+                <div className="flex-1 h-px" style={{ background: '#8B5E3C55' }} />
+                <span className="text-xs" style={{ color: '#6B3F20' }}>{groupBooks.length} ספרים</span>
+              </div>
+            )}
+            {!isCollapsed && chunks.map((chunk, ci) => (
+              <ShelfRow
+                key={ci}
+                label=""
+                books={chunk}
+                onTransfer={onTransfer}
+                onDelete={onDelete}
+                onEdit={onEdit}
+                onReview={onReview}
+              />
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -43,13 +43,13 @@ export default function BookCard({ book, onTransfer, onDelete, onEdit, onReview 
         </span>
       </div>
 
-      {/* Wrong-location badge */}
+      {/* Wrong-location dot */}
       {wrongPlace && (
-        <div className="absolute top-2 right-2 z-10" title={`הספר ב${book.location} — אמור להיות ב${expectedHome(book.owner)}`}>
-          <span className="text-base leading-none" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.7))' }}>
-            🏠
-          </span>
-        </div>
+        <div
+          className="absolute top-2 right-2 z-10 w-3 h-3 rounded-full"
+          title={`הספר ב${book.location} — אמור להיות ב${expectedHome(book.owner)}`}
+          style={{ background: '#f97316', boxShadow: '0 0 6px rgba(249,115,22,0.8)' }}
+        />
       )}
 
       {/* Bottom info */}

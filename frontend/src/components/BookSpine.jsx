@@ -60,12 +60,15 @@ export default function BookSpine({ book, onTransfer, onDelete, onEdit, onReview
     e.stopPropagation();
     if (!open) {
       const rect = spineRef.current.getBoundingClientRect();
-      const left = Math.max(POPUP_W / 2 + 8, Math.min(window.innerWidth - POPUP_W / 2 - 8, rect.left + rect.width / 2));
-      // Show above if enough space, otherwise below
-      const top = rect.top > POPUP_H + 16
+      const vw   = document.documentElement.clientWidth;
+      const vh   = document.documentElement.clientHeight;
+      // Compute left edge directly (no translateX) so clamping is exact
+      const rawLeft = rect.left + rect.width / 2 - POPUP_W / 2;
+      const left    = Math.max(8, Math.min(vw - POPUP_W - 8, rawLeft));
+      const top     = rect.top > POPUP_H + 16
         ? rect.top - POPUP_H - 8
         : rect.bottom + 8;
-      setPos({ top: Math.max(8, Math.min(window.innerHeight - POPUP_H - 8, top)), left });
+      setPos({ top: Math.max(8, Math.min(vh - POPUP_H - 8, top)), left });
     }
     setOpen(prev => !prev);
   };
@@ -86,7 +89,7 @@ export default function BookSpine({ book, onTransfer, onDelete, onEdit, onReview
                 position:  'fixed',
                 top:       `${pos.top}px`,
                 left:      `${pos.left}px`,
-                transform: 'translateX(-50%)',
+
                 zIndex:    9999,
                 width:     `${POPUP_W}px`,
               }}
