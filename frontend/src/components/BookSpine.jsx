@@ -93,11 +93,13 @@ export default function BookSpine({ book, onTransfer, onDelete, onEdit, onReview
               className="bg-white  shadow-2xl p-3 border border-gray-100"
             >
               {book.thumbnailUrl && (
-                <img
-                  src={book.thumbnailUrl}
-                  alt=""
-                  className="w-full h-24 object-cover  mb-2"
-                />
+                <div className="flex justify-center mb-2">
+                  <img
+                    src={book.thumbnailUrl}
+                    alt=""
+                    style={{ height: '120px', width: 'auto', maxWidth: '100%', objectFit: 'contain' }}
+                  />
+                </div>
               )}
               <p className="font-bold text-sm text-gray-900 leading-snug line-clamp-2">
                 {book.title}
