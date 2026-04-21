@@ -21,6 +21,7 @@ export default function EditBookModal({ open, book, familyMembers, onClose, onSa
     try {
       const data = { ...form, translator: form.translator || '' };
       if (data.status !== 'מושאל') data.current_holder = data.owner;
+      if (data.status === 'רשימת משאלות') data.location = 'רשימת משאלות';
       await onSave(book.id, data);
       onClose();
     } catch {
@@ -97,13 +98,15 @@ export default function EditBookModal({ open, book, familyMembers, onClose, onSa
                   </label>
                 )}
 
-                <label className="block">
-                  <span className="text-sm font-medium text-gray-700">מיקום</span>
-                  <select value={form.location || 'בית'} onChange={e => set('location', e.target.value)}
-                    className="mt-1 w-full border border-gray-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
-                    {locationOptions().map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </label>
+                {form.status !== 'רשימת משאלות' && (
+                  <label className="block">
+                    <span className="text-sm font-medium text-gray-700">מיקום</span>
+                    <select value={form.location || 'בית'} onChange={e => set('location', e.target.value)}
+                      className="mt-1 w-full border border-gray-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+                      {locationOptions().map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </label>
+                )}
 
                 {/* Advanced — collapsed by default */}
                 <button
