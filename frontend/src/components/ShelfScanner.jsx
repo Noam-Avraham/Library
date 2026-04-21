@@ -201,6 +201,30 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
             {/* ── UPLOAD PHASE ── */}
             {(phase === 'upload' || phase === 'scanning') && (
               <div className="flex flex-col gap-4">
+                {/* Owner + location — chosen before scanning */}
+                <div className="flex gap-3" dir="rtl">
+                  <div className="flex-1">
+                    <label className="text-xs mb-1 block" style={{ color: '#94a3b8' }}>בעלים</label>
+                    <select
+                      value={owner}
+                      onChange={e => setOwner(e.target.value)}
+                      className="w-full px-3 py-2 text-sm"
+                      style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}
+                    >
+                      {familyMembers.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs mb-1 block" style={{ color: '#94a3b8' }}>מיקום</label>
+                    <input
+                      value={location}
+                      onChange={e => setLocation(e.target.value)}
+                      className="w-full px-3 py-2 text-sm"
+                      style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}
+                    />
+                  </div>
+                </div>
+
                 {/* Drop zone */}
                 <div
                   className=" flex flex-col items-center justify-center gap-3 cursor-pointer transition-all"
@@ -253,30 +277,6 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
             {/* ── RESULTS PHASE ── */}
             {phase === 'results' && (
               <div className="flex flex-col gap-4">
-                {/* Owner + location */}
-                <div className="flex gap-3" dir="rtl">
-                  <div className="flex-1">
-                    <label className="text-xs mb-1 block" style={{ color: '#94a3b8' }}>בעלים</label>
-                    <select
-                      value={owner}
-                      onChange={e => setOwner(e.target.value)}
-                      className="w-full  px-3 py-2 text-sm"
-                      style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}
-                    >
-                      {familyMembers.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-xs mb-1 block" style={{ color: '#94a3b8' }}>מיקום</label>
-                    <input
-                      value={location}
-                      onChange={e => setLocation(e.target.value)}
-                      className="w-full  px-3 py-2 text-sm"
-                      style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}
-                    />
-                  </div>
-                </div>
-
                 {/* Select all */}
                 <div className="flex items-center justify-between" dir="rtl">
                   <p className="text-sm font-medium" style={{ color: '#f5e6cc' }}>

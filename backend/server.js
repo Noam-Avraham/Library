@@ -332,13 +332,12 @@ app.get('/api/stats', (req, res) => {
 
 // ── Next Book Recommendation ─────────────────────────────────────────────────
 app.get('/api/next-book', async (req, res) => {
-  const { user_name } = req.query;
+  const { user_name, mode = 'library' } = req.query;
   if (!user_name) return res.status(400).json({ error: 'user_name required' });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
 
-  // Fetch only what Claude needs — lean fields, no thumbnails/ISBNs
   const readBooks = all(`
     SELECT b.title, b.author, b.genre, r.rating, r.review_text
     FROM reviews r JOIN books b ON r.book_id = b.id
@@ -346,6 +345,45 @@ app.get('/api/next-book', async (req, res) => {
     ORDER BY r.rating DESC NULLS LAST
   `, [user_name]);
 
+  if (readBooks.length === 0)
+    return res.json({ recommendations: [], reason: 'no_history' });
+
+  const readList = readBooks.map(b =>
+    `- "${b.title}"${b.author ? ` / ${b.author}` : ''}${b.genre ? ` [${b.genre}]` : ''}${b.rating ? ` — ${b.rating}/5` : ''}${b.review_text ? `: "${b.review_text}"` : ''}`
+  ).join('\n');
+
+  const client = new Anthropic({ apiKey });
+
+  // ── External mode: recommend books outside the library ──────────────────────
+  if (mode === 'external') {
+    try {
+      const message = await client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: `You are a personal librarian. Based on this person's reading history, recommend 5 books they don't own yet that they would love.
+
+BOOKS THIS PERSON HAS READ:
+${readList}
+
+Return ONLY a JSON array, no other text:
+[{"title": "...", "author": "...", "reason": "<one sentence in Hebrew explaining why they'd enjoy it>"}]
+
+Recommend real, well-known books that match their taste. Return exactly 5.`,
+        }],
+      });
+
+      const raw = message.content[0]?.text || '[]';
+      const match = raw.match(/\[[\s\S]*\]/);
+      const recommendations = match ? JSON.parse(match[0]) : [];
+      return res.json({ recommendations, reason: 'ok', mode: 'external' });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ── Library mode: recommend from unread books in the library ─────────────────
   const unreadBooks = all(`
     SELECT b.id, b.title, b.author, b.genre, b.thumbnailUrl
     FROM books b
@@ -355,21 +393,13 @@ app.get('/api/next-book', async (req, res) => {
     AND b.status != 'רשימת משאלות'
   `, [user_name]);
 
-  if (readBooks.length === 0)
-    return res.json({ recommendations: [], reason: 'no_history' });
-
   if (unreadBooks.length === 0)
     return res.json({ recommendations: [], reason: 'all_read' });
-
-  const readList = readBooks.map(b =>
-    `- "${b.title}"${b.author ? ` / ${b.author}` : ''}${b.genre ? ` [${b.genre}]` : ''}${b.rating ? ` — ${b.rating}/5` : ''}${b.review_text ? `: "${b.review_text}"` : ''}`
-  ).join('\n');
 
   const unreadList = unreadBooks.map((b, i) =>
     `${i}: "${b.title}"${b.author ? ` / ${b.author}` : ''}${b.genre ? ` [${b.genre}]` : ''}`
   ).join('\n');
 
-  const client = new Anthropic({ apiKey });
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
@@ -398,7 +428,7 @@ Pick the best matches based on genres, authors, themes, and their ratings/review
       .filter(p => p.index >= 0 && p.index < unreadBooks.length)
       .map(p => ({ ...unreadBooks[p.index], reason: p.reason }));
 
-    res.json({ recommendations, reason: 'ok' });
+    res.json({ recommendations, reason: 'ok', mode: 'library' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
