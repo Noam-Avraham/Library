@@ -7,10 +7,23 @@ const SPINE_WIDTH = 36;
 const SPINE_GAP   = 2;   // gap-0.5 = 2px
 const SHELF_PAD   = 64;  // px-8 on each side = 32*2
 
-function groupBooks(books, sortBy, shelfSize) {
-  const makeGroups = (keyFn, fallback) => {
+const SPECIAL_STATUSES = ['מושאל', 'רשימת משאלות'];
+const SPECIAL_SHELF_LABEL = { 'מושאל': 'מושאלים', 'רשימת משאלות': 'רשימת משאלות' };
+const SPECIAL_SHELF_ICON  = { 'מושאלים': '📤', 'רשימת משאלות': '⭐' };
+
+function groupBooks(books, sortBy, shelfSize, statusFilter = '') {
+  // Single-status filter modes
+  if (statusFilter === 'מושאל')          return [['מושאלים', books]];
+  if (statusFilter === 'רשימת משאלות')   return [['רשימת משאלות', books]];
+
+  // Split into regular books and the two special groups
+  const regular  = books.filter(b => !SPECIAL_STATUSES.includes(b.status));
+  const borrowed = books.filter(b => b.status === 'מושאל');
+  const wishlist = books.filter(b => b.status === 'רשימת משאלות');
+
+  const makeGroups = (keyFn, fallback, arr) => {
     const map = {};
-    books.forEach(b => {
+    arr.forEach(b => {
       const k = keyFn(b) || fallback;
       if (!map[k]) map[k] = [];
       map[k].push(b);
@@ -18,22 +31,31 @@ function groupBooks(books, sortBy, shelfSize) {
     return Object.entries(map).sort(([, a], [, b]) => b.length - a.length);
   };
 
+  let groups;
   switch (sortBy) {
     case 'owner':
-      return makeGroups(b => b.owner, 'ללא בעלים');
+      groups = makeGroups(b => b.owner, 'ללא בעלים', regular); break;
     case 'genre':
-      return makeGroups(b => b.genre, 'ללא ז\'אנר');
+      groups = makeGroups(b => b.genre, 'ללא ז\'אנר', regular); break;
     case 'title-az':
     case 'author-az': {
       const size = shelfSize || 14;
-      const shelves = [];
-      for (let i = 0; i < books.length; i += size)
-        shelves.push(['', books.slice(i, i + size)]);
-      return shelves;
+      groups = [];
+      for (let i = 0; i < regular.length; i += size)
+        groups.push(['', regular.slice(i, i + size)]);
+      break;
     }
     default: // location
-      return makeGroups(b => b.location, 'בית');
+      groups = makeGroups(b => b.location, 'בית', regular);
   }
+
+  // Always append special shelves at the bottom when no status filter
+  if (!statusFilter) {
+    if (borrowed.length > 0) groups.push(['מושאלים', borrowed]);
+    if (wishlist.length > 0) groups.push(['רשימת משאלות', wishlist]);
+  }
+
+  return groups;
 }
 
 // ── Shelf row ─────────────────────────────────────────────────────────────────
@@ -87,7 +109,7 @@ function ShelfRow({ label, books, onTransfer, onDelete, onEdit, onReview }) {
 }
 
 // ── Shelf view ────────────────────────────────────────────────────────────────
-function ShelfView({ books, sortBy, onTransfer, onDelete, onEdit, onReview }) {
+function ShelfView({ books, sortBy, statusFilter, onTransfer, onDelete, onEdit, onReview }) {
   const containerRef = useRef(null);
   const [shelfSize,  setShelfSize]  = useState(14);
   const [collapsed,  setCollapsed]  = useState({});
@@ -107,7 +129,7 @@ function ShelfView({ books, sortBy, onTransfer, onDelete, onEdit, onReview }) {
     return () => ro.disconnect();
   }, [measure]);
 
-  const groups = groupBooks(books, sortBy, shelfSize);
+  const groups = groupBooks(books, sortBy, shelfSize, statusFilter);
 
   const toggle = (key) => setCollapsed(c => ({ ...c, [key]: !c[key] }));
 
@@ -160,9 +182,9 @@ const GROUP_ICON = { location: '📍', owner: '👤', genre: '🏷️' };
 const GROUPED_SORTS = ['location', 'owner', 'genre'];
 
 // ── Grid view ─────────────────────────────────────────────────────────────────
-function GridView({ books, sortBy, onTransfer, onDelete, onEdit, onReview }) {
-  if (GROUPED_SORTS.includes(sortBy)) {
-    const groups = groupBooks(books, sortBy);
+function GridView({ books, sortBy, statusFilter, onTransfer, onDelete, onEdit, onReview }) {
+  if (statusFilter === 'מושאל' || statusFilter === 'רשימת משאלות' || GROUPED_SORTS.includes(sortBy) || !statusFilter) {
+    const groups = groupBooks(books, sortBy, undefined, statusFilter);
     return (
       <div className="space-y-10">
         {groups.map(([label, groupBooks], i) => (
@@ -170,7 +192,7 @@ function GridView({ books, sortBy, onTransfer, onDelete, onEdit, onReview }) {
             {label && (
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-sm font-bold tracking-wide" style={{ color: '#4A2810' }}>
-                  {GROUP_ICON[sortBy]} {label}
+                  {SPECIAL_SHELF_ICON[label] ?? GROUP_ICON[sortBy]} {label}
                 </span>
                 <div className="flex-1 h-px" style={{ background: '#8B5E3C55' }} />
                 <span className="text-xs" style={{ color: '#6B3F20' }}>{groupBooks.length} ספרים</span>
@@ -224,7 +246,7 @@ function emptyMessage(filters = {}) {
 }
 
 // ── Combined export ───────────────────────────────────────────────────────────
-export default function BookshelfView({ books, loading, viewMode, sortBy, filters, onTransfer, onDelete, onEdit, onReview }) {
+export default function BookshelfView({ books, loading, viewMode, sortBy, filters, statusFilter, onTransfer, onDelete, onEdit, onReview }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
@@ -250,6 +272,6 @@ export default function BookshelfView({ books, loading, viewMode, sortBy, filter
   }
 
   return viewMode === 'shelf'
-    ? <ShelfView books={books} sortBy={sortBy} onTransfer={onTransfer} onDelete={onDelete} onEdit={onEdit} onReview={onReview} />
-    : <GridView  books={books} sortBy={sortBy} onTransfer={onTransfer} onDelete={onDelete} onEdit={onEdit} onReview={onReview} />;
+    ? <ShelfView books={books} sortBy={sortBy} statusFilter={statusFilter} onTransfer={onTransfer} onDelete={onDelete} onEdit={onEdit} onReview={onReview} />
+    : <GridView  books={books} sortBy={sortBy} statusFilter={statusFilter} onTransfer={onTransfer} onDelete={onDelete} onEdit={onEdit} onReview={onReview} />;
 }

@@ -60,7 +60,7 @@ export default function App() {
     api.getFamily().then(setFamilyMembers).catch(console.error);
   }, []);
 
-  // ── Client-side sort (for grid view / flat shelf views) ────────────────────
+  // ── Client-side sort + hide borrowed books from normal shelf ─────────────────
   const sortedBooks = useMemo(() => {
     const arr = [...books];
     switch (sortBy) {
@@ -81,6 +81,7 @@ export default function App() {
     }
     return arr;
   }, [books, sortBy]);
+
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleFilterChange = (key, value) => setFilters(f => ({ ...f, [key]: value }));
@@ -140,6 +141,7 @@ export default function App() {
           {filters.status === 'מושאל' && <LoansList books={sortedBooks} />}
           <BookshelfView
             books={sortedBooks}
+            statusFilter={filters.status}
             loading={loading}
             viewMode={viewMode}
             sortBy={sortBy}
