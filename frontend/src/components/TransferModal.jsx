@@ -3,27 +3,35 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const STATUSES = ['זמין', 'מושאל', 'רשימת משאלות'];
 
-import { sortedMembers, locationOptions } from '../data/members.js';
+import { locationOptions } from '../data/members.js';
 
-export default function TransferModal({ open, book, familyMembers, onClose, onTransfer }) {
-  const members = sortedMembers(familyMembers);
+const today = () => new Date().toISOString().split('T')[0];
+
+export default function TransferModal({ open, book, onClose, onTransfer }) {
   const [holder, setHolder] = useState('');
   const [status, setStatus] = useState('מושאל');
   const [location, setLocation] = useState('');
+  const [borrowedAt, setBorrowedAt] = useState('');
   const [saving, setSaving] = useState(false);
 
   const handleOpen = () => {
     setHolder(book?.current_holder || '');
     setStatus(book?.status || 'מושאל');
     setLocation(book?.location || 'בית');
+    setBorrowedAt(book?.borrowed_at || today());
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!holder) return;
+    if (status === 'מושאל' && !holder.trim()) return;
     setSaving(true);
     try {
-      await onTransfer(book.id, { current_holder: holder, status, location: location || 'בית' });
+      await onTransfer(book.id, {
+        current_holder: holder,
+        status,
+        location: location || 'בית',
+        borrowed_at: status === 'מושאל' ? borrowedAt : null,
+      });
       onClose();
     } catch {
       alert('שגיאה בהעברת הספר.');
@@ -75,21 +83,6 @@ export default function TransferModal({ open, book, familyMembers, onClose, onTr
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <label className="block">
-                    <span className="text-sm font-medium text-gray-700">העבר אל</span>
-                    <select
-                      required
-                      value={holder}
-                      onChange={e => setHolder(e.target.value)}
-                      className="mt-1 w-full border border-gray-200  px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
-                    >
-                      <option value="">בחר...</option>
-                      {members.map(m => (
-                        <option key={m.id} value={m.name}>{m.name}</option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="block">
                     <span className="text-sm font-medium text-gray-700">סטטוס</span>
                     <select
                       value={status}
@@ -99,6 +92,32 @@ export default function TransferModal({ open, book, familyMembers, onClose, onTr
                       {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </label>
+
+                  {status === 'מושאל' && (
+                    <>
+                      <label className="block">
+                        <span className="text-sm font-medium text-gray-700">מושאל למי</span>
+                        <input
+                          type="text"
+                          required
+                          value={holder}
+                          onChange={e => setHolder(e.target.value)}
+                          placeholder="הקלד שם..."
+                          className="mt-1 w-full border border-orange-200  px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 bg-orange-50"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="text-sm font-medium text-gray-700">תאריך השאלה</span>
+                        <input
+                          type="date"
+                          value={borrowedAt}
+                          onChange={e => setBorrowedAt(e.target.value)}
+                          className="mt-1 w-full border border-orange-200  px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 bg-orange-50"
+                        />
+                      </label>
+                    </>
+                  )}
 
                   <label className="block">
                     <span className="text-sm font-medium text-gray-700">מיקום</span>
@@ -121,7 +140,7 @@ export default function TransferModal({ open, book, familyMembers, onClose, onTr
                     </button>
                     <button
                       type="submit"
-                      disabled={saving || !holder}
+                      disabled={saving || (status === 'מושאל' && !holder.trim())}
                       className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold py-2.5  text-sm transition-colors"
                     >
                       {saving ? 'מעביר...' : 'העבר ספר'}

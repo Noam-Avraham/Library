@@ -242,11 +242,11 @@ app.post('/api/books', (req, res) => {
 });
 
 app.put('/api/books/:id', (req, res) => {
-  const { title, author, translator, thumbnailUrl, isbn, owner, current_holder, location, status, genre, description } = req.body;
+  const { title, author, translator, thumbnailUrl, isbn, owner, current_holder, location, status, genre, description, borrowed_at } = req.body;
   run(
-    `UPDATE books SET title=?, author=?, translator=?, thumbnailUrl=?, isbn=?, owner=?, current_holder=?, location=?, status=?, genre=?, description=?
+    `UPDATE books SET title=?, author=?, translator=?, thumbnailUrl=?, isbn=?, owner=?, current_holder=?, location=?, status=?, genre=?, description=?, borrowed_at=?
      WHERE id=?`,
-    [title, author, translator || '', thumbnailUrl, isbn, owner, current_holder, location, status, genre, description, req.params.id]
+    [title, author, translator || '', thumbnailUrl, isbn, owner, current_holder, location, status, genre, description, status === 'מושאל' ? (borrowed_at || null) : null, req.params.id]
   );
   res.json(get('SELECT * FROM books WHERE id = ?', [Number(req.params.id)]));
 });
@@ -257,9 +257,10 @@ app.delete('/api/books/:id', (req, res) => {
 });
 
 app.post('/api/books/:id/transfer', (req, res) => {
-  const { current_holder, status, location } = req.body;
-  run('UPDATE books SET current_holder=?, status=?, location=? WHERE id=?',
-    [current_holder, status || 'מושאל', location || 'בית', Number(req.params.id)]);
+  const { current_holder, status, location, borrowed_at } = req.body;
+  const resolvedStatus = status || 'מושאל';
+  run('UPDATE books SET current_holder=?, status=?, location=?, borrowed_at=? WHERE id=?',
+    [current_holder, resolvedStatus, location || 'בית', resolvedStatus === 'מושאל' ? (borrowed_at || null) : null, Number(req.params.id)]);
   res.json(get('SELECT * FROM books WHERE id = ?', [Number(req.params.id)]));
 });
 

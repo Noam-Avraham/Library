@@ -19,7 +19,10 @@ export default function EditBookModal({ open, book, familyMembers, onClose, onSa
     setSaving(true);
     try {
       const data = { ...form, translator: form.translator || '' };
-      if (data.status !== 'מושאל') data.current_holder = data.owner;
+      if (data.status !== 'מושאל') {
+        data.current_holder = data.owner;
+        data.borrowed_at = null;
+      }
       if (data.status === 'רשימת משאלות') data.location = 'רשימת משאלות';
       await onSave(book.id, data);
       onClose();
@@ -86,15 +89,26 @@ export default function EditBookModal({ open, book, familyMembers, onClose, onSa
                 </div>
 
                 {form.status === 'מושאל' && (
-                  <label className="block">
-                    <span className="text-sm font-medium text-gray-700">מחזיק כעת</span>
-                    <input
-                      value={form.current_holder || ''}
-                      onChange={e => set('current_holder', e.target.value)}
-                      placeholder="שם המחזיק..."
-                      className="mt-1 w-full border border-orange-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 bg-orange-50"
-                    />
-                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block">
+                      <span className="text-sm font-medium text-gray-700">מושאל למי</span>
+                      <input
+                        value={form.current_holder || ''}
+                        onChange={e => set('current_holder', e.target.value)}
+                        placeholder="שם המחזיק..."
+                        className="mt-1 w-full border border-orange-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 bg-orange-50"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm font-medium text-gray-700">תאריך השאלה</span>
+                      <input
+                        type="date"
+                        value={form.borrowed_at || new Date().toISOString().split('T')[0]}
+                        onChange={e => set('borrowed_at', e.target.value)}
+                        className="mt-1 w-full border border-orange-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 bg-orange-50"
+                      />
+                    </label>
+                  </div>
                 )}
 
                 {form.status !== 'רשימת משאלות' && (

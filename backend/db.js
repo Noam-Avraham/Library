@@ -76,6 +76,12 @@ async function init() {
     _db.run("ALTER TABLE books ADD COLUMN translator TEXT DEFAULT ''");
   }
 
+  // Migration: add borrowed_at column to existing DBs
+  const hasBorrowedAt = get("SELECT COUNT(*) as c FROM pragma_table_info('books') WHERE name='borrowed_at'");
+  if (!hasBorrowedAt?.c) {
+    _db.run("ALTER TABLE books ADD COLUMN borrowed_at TEXT DEFAULT NULL");
+  }
+
   _db.run(`
     CREATE TABLE IF NOT EXISTS reviews (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

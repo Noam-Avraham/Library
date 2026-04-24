@@ -12,6 +12,7 @@ import ReviewModal from './components/ReviewModal.jsx';
 import BookReviewsModal from './components/BookReviewsModal.jsx';
 import NextBookModal from './components/NextBookModal.jsx';
 import ShelfScanner from './components/ShelfScanner.jsx';
+import LoansList from './components/LoansList.jsx';
 
 const QUOTES = [
   { text: 'אם תאכל שלוש ארוחות ביום תהיה שמן. אם תקרא שלושה ספרים ביום תהיה חכם.', author: 'שמעון פרס' },
@@ -136,6 +137,7 @@ export default function App() {
           onSortChange={setSortBy}
         />
         <main className="max-w-7xl mx-auto px-2 sm:px-6 py-4 sm:py-8">
+          {filters.status === 'מושאל' && <LoansList books={sortedBooks} />}
           <BookshelfView
             books={sortedBooks}
             loading={loading}
