@@ -24,6 +24,7 @@ export default function EditBookModal({ open, book, familyMembers, onClose, onSa
         data.borrowed_at = null;
       }
       if (data.status === 'רשימת משאלות') data.location = 'רשימת משאלות';
+      if (data.status === 'מושאל' && data.location === 'רשימת משאלות') data.location = 'בית';
       await onSave(book.id, data);
       onClose();
     } catch {
@@ -33,7 +34,13 @@ export default function EditBookModal({ open, book, familyMembers, onClose, onSa
     }
   };
 
-  const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+  const set = (key, val) => {
+    if (key === 'status' && val === 'מושאל' && form.location === 'רשימת משאלות') {
+      setForm(f => ({ ...f, status: val, location: 'בית' }));
+      return;
+    }
+    setForm(f => ({ ...f, [key]: val }));
+  };
 
   return (
     <AnimatePresence>
@@ -113,7 +120,9 @@ export default function EditBookModal({ open, book, familyMembers, onClose, onSa
 
                 {form.status !== 'רשימת משאלות' && (
                   <label className="block">
-                    <span className="text-sm font-medium text-gray-700">מיקום</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {form.status === 'מושאל' ? 'מיקום מקורי (לאן יוחזר)' : 'מיקום'}
+                    </span>
                     <select value={form.location || 'בית'} onChange={e => set('location', e.target.value)}
                       className="mt-1 w-full border border-gray-200  px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
                       {locationOptions().map(o => <option key={o} value={o}>{o}</option>)}

@@ -115,8 +115,7 @@ export default function App() {
         onAddClick={() => setAddOpen(true)}
         onScanClick={() => setScanOpen(true)}
         onNextBookClick={() => setNextBookOpen(true)}
-        bookCount={books.length}
-        activeTab={activeTab}
+activeTab={activeTab}
         onTabChange={setActiveTab}
       />
 

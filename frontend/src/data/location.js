@@ -6,6 +6,7 @@ export function expectedHome(owner) {
 
 export function isWrongLocation(book) {
   if (!book.owner || book.owner === OTHER_OWNER) return false;
+  if (book.status === 'רשימת משאלות' || book.status === 'מושאל') return false;
   const home = expectedHome(book.owner);
   if (!home) return false;
   return book.location !== home;

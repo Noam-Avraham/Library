@@ -122,15 +122,23 @@ export default function BookSpine({ book, onTransfer, onDelete, onEdit, onReview
                 <span className="text-gray-300 mx-0.5">·</span>
                 <span className="text-xs text-indigo-600 font-medium">{book.owner}</span>
               </div>
-              {book.current_holder && book.current_holder !== book.owner && (
-                <p className="text-xs text-orange-600 mt-0.5">אצל: {book.current_holder}</p>
-              )}
-              {wrongPlace && (
-                <div className="flex items-center gap-1.5 mt-2 px-2 py-1.5  text-xs font-medium"
-                  style={{ background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa' }}>
-                  <span>🏠</span>
-                  <span>הספר ב{book.location} (שייך ל{book.owner})</span>
+              {book.status === 'מושאל' ? (
+                <div className="mt-1.5 space-y-0.5">
+                  {book.current_holder && (
+                    <p className="text-xs text-orange-600">אצל: {book.current_holder}</p>
+                  )}
+                  <p className="text-xs text-gray-400">מקום מקורי: {book.location}</p>
                 </div>
+              ) : (
+                <>
+                  {wrongPlace && (
+                    <div className="flex items-center gap-1.5 mt-2 px-2 py-1.5  text-xs font-medium"
+                      style={{ background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa' }}>
+                      <span>🏠</span>
+                      <span>הספר ב{book.location} (שייך ל{book.owner})</span>
+                    </div>
+                  )}
+                </>
               )}
               <div className="flex gap-1 mt-2 pt-2 border-t border-gray-100">
                 <button

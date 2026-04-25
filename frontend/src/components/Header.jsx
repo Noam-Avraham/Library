@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { LIBRARY } from '../data/config.js';
 
-export default function Header({ onAddClick, onScanClick, onNextBookClick, bookCount, activeTab, onTabChange }) {
+export default function Header({ onAddClick, onScanClick, onNextBookClick, activeTab, onTabChange }) {
   return (
     <header
       style={{
@@ -24,9 +24,6 @@ export default function Header({ onAddClick, onScanClick, onNextBookClick, bookC
             <h1 className="text-base sm:text-2xl font-bold leading-tight truncate" style={{ color: '#f5e6cc', letterSpacing: '0.02em' }}>
               {LIBRARY.name}
             </h1>
-            <p className="text-xs font-light hidden sm:block" style={{ color: '#94a3b8' }}>
-              {bookCount > 0 ? `${bookCount} ספרים באוסף` : LIBRARY.subtitle}
-            </p>
           </div>
         </div>
 

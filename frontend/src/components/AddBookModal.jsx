@@ -89,6 +89,8 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
   const [searching,   setSearching]   = useState(false);
   const [searchError, setSearchError] = useState('');
   const [saving,      setSaving]      = useState(false);
+  const [checking,    setChecking]    = useState(false);
+  const [duplicate,   setDuplicate]   = useState(null);
   const [form,        setForm]        = useState(() => emptyForm(familyMembers));
 
   const handleSearch = async (e) => {
@@ -126,9 +128,7 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
     setStep('details');
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (!form.title.trim()) return;
+  const doSave = async () => {
     setSaving(true);
     try {
       await onAdd({ ...form, current_holder: form.current_holder || form.owner });
@@ -140,16 +140,41 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
     }
   };
 
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!form.title.trim()) return;
+
+    setChecking(true);
+    try {
+      const existing = await api.getBooks({ search: form.title.trim() });
+      const normalized = form.title.trim().toLowerCase();
+      const match = existing.find(b => b.title.trim().toLowerCase() === normalized);
+      if (match) {
+        setDuplicate(match);
+        setChecking(false);
+        return;
+      }
+    } catch {
+      // proceed on error
+    }
+    setChecking(false);
+    await doSave();
+  };
+
   const handleClose = () => {
     setStep('search');
     setQuery('');
     setResults([]);
     setSearchError('');
+    setDuplicate(null);
     setForm(emptyForm(familyMembers));
     onClose();
   };
 
-  const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+  const set = (key, val) => {
+    if (key === 'title') setDuplicate(null);
+    setForm(f => ({ ...f, [key]: val }));
+  };
 
   return (
     <AnimatePresence>
@@ -341,16 +366,52 @@ export default function AddBookModal({ open, onClose, familyMembers, onAdd }) {
                     </label>
                   </div>
 
-                  <div className="flex gap-3 pt-2">
-                    <button type="button" onClick={() => setStep('search')}
-                      className="flex-1 border border-gray-200 text-gray-600 font-medium py-2.5  text-sm hover:bg-gray-50 transition-colors">
-                      חזור
-                    </button>
-                    <button type="submit" disabled={saving}
-                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold py-2.5  text-sm transition-colors">
-                      {saving ? 'שומר...' : 'שמור ספר'}
-                    </button>
-                  </div>
+                  {duplicate && (
+                    <div className="bg-amber-50 border border-amber-200 p-4 space-y-3">
+                      <div className="flex items-start gap-2">
+                        <span className="text-amber-500 text-base mt-0.5">⚠️</span>
+                        <div>
+                          <p className="font-semibold text-amber-800 text-sm">ספר עם השם הזה כבר קיים בספרייה</p>
+                          <p className="text-xs text-amber-600 mt-0.5">האם להוסיף בכל זאת?</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 bg-white border border-amber-100 p-2">
+                        <BookCover thumbnailUrl={duplicate.thumbnailUrl} isbn={duplicate.isbn} title={duplicate.title} />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-gray-900 line-clamp-1">{duplicate.title}</p>
+                          {duplicate.author && <p className="text-xs text-gray-500 line-clamp-1">{duplicate.author}</p>}
+                          <div className="flex flex-wrap gap-x-3 mt-1">
+                            {duplicate.owner && <span className="text-xs text-gray-400">בעלים: {duplicate.owner}</span>}
+                            {duplicate.location && <span className="text-xs text-gray-400">מיקום: {duplicate.location}</span>}
+                            {duplicate.status && <span className="text-xs text-gray-400">סטטוס: {duplicate.status}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => setDuplicate(null)}
+                          className="flex-1 border border-gray-200 text-gray-600 font-medium py-2.5 text-sm hover:bg-gray-50 transition-colors min-h-[44px]">
+                          חזור לעריכה
+                        </button>
+                        <button type="button" onClick={doSave} disabled={saving}
+                          className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white font-semibold py-2.5 text-sm transition-colors min-h-[44px]">
+                          {saving ? 'שומר...' : 'הוסף בכל זאת'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {!duplicate && (
+                    <div className="flex gap-3 pt-2">
+                      <button type="button" onClick={() => setStep('search')}
+                        className="flex-1 border border-gray-200 text-gray-600 font-medium py-2.5  text-sm hover:bg-gray-50 transition-colors">
+                        חזור
+                      </button>
+                      <button type="submit" disabled={saving || checking}
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold py-2.5  text-sm transition-colors">
+                        {checking ? 'בודק...' : saving ? 'שומר...' : 'שמור ספר'}
+                      </button>
+                    </div>
+                  )}
                 </form>
               )}
             </div>
