@@ -47,136 +47,88 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
   const catalogSelected = source === 'catalog';
 
   return (
-    <div style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)' }}>
+    <div className="flex gap-2">
 
-      {/* ══ MOBILE: two compact rows ══ */}
-
-      {/* Gemini row — mobile only */}
+      {/* ── Gemini panel ── */}
       <div
-        className="sm:hidden flex items-center gap-2 px-3 py-2 cursor-pointer transition-all"
-        style={{ background: geminiSelected ? 'rgba(180,130,30,0.15)' : 'transparent' }}
+        className="flex-1 flex gap-1.5 p-2 sm:p-3 cursor-pointer transition-all"
+        style={{
+          background: geminiSelected ? 'rgba(180,130,30,0.15)' : 'rgba(255,255,255,0.04)',
+          border: `2px solid ${geminiSelected ? '#d97706' : 'rgba(255,255,255,0.08)'}`,
+        }}
         onClick={() => onSourceChange(geminiSelected ? null : 'gemini')}
-        dir="rtl"
       >
         <RadioDot active={geminiSelected} />
-        <span className="text-xs flex-shrink-0" style={{ color: '#6b7280' }}>📷</span>
-        <ConfidenceDot confidence={identified.confidence} />
-        <p className="text-xs font-semibold flex-1 min-w-0 truncate" style={{ color: '#f5e6cc' }}>{identified.title}</p>
-        {isDuplicate?.gemini && <span className="text-xs flex-shrink-0" style={{ color: '#fbbf24' }}>⚠️</span>}
-      </div>
-
-      {/* Divider — mobile only */}
-      <div className="sm:hidden" style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
-
-      {/* Catalog row — mobile only */}
-      <div
-        className={`sm:hidden flex items-center gap-2 px-3 py-2 transition-all ${hasMatch ? 'cursor-pointer' : 'cursor-default'}`}
-        style={{
-          background: catalogSelected ? 'rgba(180,130,30,0.15)' : 'transparent',
-          opacity: !enriching && !hasMatch ? 0.4 : 1,
-        }}
-        onClick={() => { if (hasMatch) onSourceChange(catalogSelected ? null : 'catalog'); }}
-        dir="rtl"
-      >
-        <RadioDot active={catalogSelected} />
-        <span className="text-xs flex-shrink-0" style={{ color: mq?.color ?? '#6b7280' }}>📚</span>
-        {enriching ? (
-          <div className="w-3 h-3 border-2 rounded-full animate-spin flex-shrink-0"
-            style={{ borderColor: '#4b5563', borderTopColor: '#94a3b8' }} />
-        ) : mq ? (
-          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: mq.color }} />
-        ) : null}
-        <p className="text-xs font-semibold flex-1 min-w-0 truncate" style={{ color: '#f5e6cc' }}>
-          {enriching ? 'מחפש בקטלוג...' : best ? best.title : 'לא נמצא בקטלוג'}
-        </p>
-        {isDuplicate?.catalog && <span className="text-xs flex-shrink-0" style={{ color: '#fbbf24' }}>⚠️</span>}
-      </div>
-
-      {/* ══ DESKTOP: side-by-side panels ══ */}
-      <div className="hidden sm:flex gap-2 p-2">
-
-        {/* Gemini panel */}
-        <div
-          className="flex-1 flex gap-1.5 p-3 cursor-pointer transition-all"
-          style={{
-            background: geminiSelected ? 'rgba(180,130,30,0.15)' : 'rgba(255,255,255,0.04)',
-            border: `2px solid ${geminiSelected ? '#d97706' : 'rgba(255,255,255,0.08)'}`,
-          }}
-          onClick={() => onSourceChange(geminiSelected ? null : 'gemini')}
-        >
-          <RadioDot active={geminiSelected} />
-          <div className="flex-1 min-w-0" dir="rtl">
-            <p className="text-xs mb-1" style={{ color: '#6b7280' }}>📷 זוהה</p>
-            <div className="flex items-center gap-1.5">
-              <ConfidenceDot confidence={identified.confidence} />
-              <p className="text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{identified.title}</p>
-              {identified.language === 'en' && (
-                <span className="text-xs px-1 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>EN</span>
-              )}
-            </div>
-            {identified.author && (
-              <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>{identified.author}</p>
-            )}
-            {isDuplicate?.gemini && (
-              <p className="text-xs mt-1" style={{ color: '#fbbf24' }}>⚠️ כבר קיים בספרייה</p>
+        <div className="flex-1 min-w-0" dir="rtl">
+          <div className="flex items-center gap-1.5">
+            <ConfidenceDot confidence={identified.confidence} />
+            <p className="text-xs sm:text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{identified.title}</p>
+            {identified.language === 'en' && (
+              <span className="text-xs px-1 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>EN</span>
             )}
           </div>
-        </div>
-
-        {/* Catalog panel */}
-        <div
-          className={`flex-1 flex gap-1.5 p-3 transition-all ${hasMatch ? 'cursor-pointer' : 'cursor-default'}`}
-          style={{
-            background: catalogSelected ? 'rgba(180,130,30,0.15)' : 'rgba(255,255,255,0.04)',
-            border: `2px solid ${catalogSelected ? '#d97706' : 'rgba(255,255,255,0.08)'}`,
-            opacity: !enriching && !hasMatch ? 0.45 : 1,
-          }}
-          onClick={() => { if (hasMatch) onSourceChange(catalogSelected ? null : 'catalog'); }}
-        >
-          <RadioDot active={catalogSelected} />
-          {enriching ? (
-            <div className="flex-1 flex items-center gap-2" dir="rtl">
-              <div className="w-3 h-3 border-2 rounded-full animate-spin flex-shrink-0"
-                style={{ borderColor: '#4b5563', borderTopColor: '#94a3b8' }} />
-              <p className="text-xs" style={{ color: '#6b7280' }}>מחפש...</p>
-            </div>
-          ) : hasMatch ? (
-            <div className="flex gap-1.5 flex-1 min-w-0">
-              {best.thumbnailUrl && (
-                <img src={best.thumbnailUrl} alt=""
-                  className="w-8 h-12 object-cover flex-shrink-0"
-                  onError={e => { e.target.style.display = 'none'; }} />
-              )}
-              <div className="flex-1 min-w-0" dir="rtl">
-                <p className="text-xs mb-1" style={{ color: mq.color }}>📚 {mq.label}</p>
-                <p className="text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{best.title}</p>
-                {best.author && (
-                  <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>{best.author}</p>
-                )}
-                {isDuplicate?.catalog && (
-                  <p className="text-xs mt-1" style={{ color: '#fbbf24' }}>⚠️ כבר קיים בספרייה</p>
-                )}
-                {matches.length > 1 && (
-                  <select
-                    className="mt-1 text-xs px-1 py-0.5 w-full"
-                    style={{ background: '#2d2547', color: '#94a3b8', border: '1px solid #4b5563' }}
-                    value={matches.indexOf(selectedMatch ?? matches[0])}
-                    onChange={e => { e.stopPropagation(); onMatchChange(matches[Number(e.target.value)]); }}
-                    onClick={e => e.stopPropagation()}
-                  >
-                    {matches.map((m, i) => (
-                      <option key={i} value={i}>{m.title} — {m.author || '?'}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 flex items-center" dir="rtl">
-              <p className="text-xs" style={{ color: '#4b5563' }}>לא נמצא בקטלוג</p>
-            </div>
+          {identified.author && (
+            <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>{identified.author}</p>
+          )}
+          {isDuplicate?.gemini && (
+            <p className="text-xs mt-1" style={{ color: '#fbbf24' }}>⚠️ כבר קיים</p>
           )}
         </div>
+      </div>
+
+      {/* ── Catalog panel ── */}
+      <div
+        className={`flex-1 flex gap-1.5 p-2 sm:p-3 transition-all ${hasMatch ? 'cursor-pointer' : 'cursor-default'}`}
+        style={{
+          background: catalogSelected ? 'rgba(180,130,30,0.15)' : 'rgba(255,255,255,0.04)',
+          border: `2px solid ${catalogSelected ? '#d97706' : 'rgba(255,255,255,0.08)'}`,
+          opacity: !enriching && !hasMatch ? 0.45 : 1,
+        }}
+        onClick={() => { if (hasMatch) onSourceChange(catalogSelected ? null : 'catalog'); }}
+      >
+        <RadioDot active={catalogSelected} />
+        {enriching ? (
+          <div className="flex-1 flex items-center gap-2" dir="rtl">
+            <div className="w-3 h-3 border-2 rounded-full animate-spin flex-shrink-0"
+              style={{ borderColor: '#4b5563', borderTopColor: '#94a3b8' }} />
+            <p className="text-xs" style={{ color: '#6b7280' }}>מחפש...</p>
+          </div>
+        ) : hasMatch ? (
+          <div className="flex gap-1.5 flex-1 min-w-0">
+            {best.thumbnailUrl && (
+              <img src={best.thumbnailUrl} alt=""
+                className="hidden sm:block w-8 h-12 object-cover flex-shrink-0"
+                onError={e => { e.target.style.display = 'none'; }} />
+            )}
+            <div className="flex-1 min-w-0" dir="rtl">
+              <p className="text-xs mb-0.5" style={{ color: mq.color }}>{mq.label}</p>
+              <p className="text-xs sm:text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{best.title}</p>
+              {best.author && (
+                <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>{best.author}</p>
+              )}
+              {isDuplicate?.catalog && (
+                <p className="text-xs mt-1" style={{ color: '#fbbf24' }}>⚠️ כבר קיים</p>
+              )}
+              {matches.length > 1 && (
+                <select
+                  className="mt-1 text-xs px-1 py-0.5 w-full"
+                  style={{ background: '#2d2547', color: '#94a3b8', border: '1px solid #4b5563' }}
+                  value={matches.indexOf(selectedMatch ?? matches[0])}
+                  onChange={e => { e.stopPropagation(); onMatchChange(matches[Number(e.target.value)]); }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  {matches.map((m, i) => (
+                    <option key={i} value={i}>{m.title} — {m.author || '?'}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center" dir="rtl">
+            <p className="text-xs" style={{ color: '#4b5563' }}>לא נמצא במאגר</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -475,6 +427,12 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                   >
                     {results.every((_, i) => selected[i] != null) ? 'בטל הכל' : 'בחר הכל'}
                   </button>
+                </div>
+
+                {/* Column headers */}
+                <div className="flex gap-2 px-1" dir="rtl">
+                  <p className="flex-1 text-xs font-semibold text-center" style={{ color: '#6b7280' }}>זוהה בתמונה</p>
+                  <p className="flex-1 text-xs font-semibold text-center" style={{ color: '#6b7280' }}>נמצא ספר במאגר</p>
                 </div>
 
                 {/* Book list */}
