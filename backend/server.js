@@ -578,7 +578,9 @@ app.post('/api/scan-identify', async (req, res) => {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await model.generateContent([
       { inlineData: { mimeType: mediaType, data: imageBase64 } },
-      `זהה את כל הספרים הנראים בתמונה זו של מדף ספרים.
+      `סרוק את כל התמונה בקפידה והחזר רשימה של כל הספרים הנראים במדף.
+סרוק משמאל לימין ומלמעלה למטה — אל תפספס אף ספר, כולל ספרים בקצוות, בזוויות או חלקיים.
+
 החזר JSON בלבד (ללא markdown, ללא הסברים) עם מבנה זה:
 {"books":[{"title":"...","author":"...","language":"he|en|other","confidence":"high|medium|low"}]}
 
@@ -587,9 +589,10 @@ app.post('/api/scan-identify', async (req, res) => {
 - author: שם המחבר, או מחרוזת ריקה אם לא נראה
 - language: שפת הטקסט העיקרית על העמוד
 - confidence: high=ברור לחלוטין, medium=רוב הכותרת ברורה, low=חלקי או מעורפל
-- דווח על כל ספר גם אם הוא חלקי, בזווית, או בקצה התמונה
+- דווח על כל ספר גם אם הוא חלקי, בזווית, או בקצה התמונה — השתמש ב-low confidence
 - טקסט עברי נקרא מימין לשמאל
-- אל תתרגם ואל תתקן שגיאות כתיב`,
+- אל תתרגם ואל תתקן שגיאות כתיב
+- עדיף לדווח יותר מדי מאשר לפספס ספרים`,
     ]);
     const raw = result.response.text().trim().replace(/^```json\s*/i, '').replace(/```$/, '').trim();
     res.json(JSON.parse(raw).books ?? []);
@@ -602,13 +605,20 @@ app.post('/api/scan-identify', async (req, res) => {
 app.post('/api/scan-enrich', async (req, res) => {
   const { title, author } = req.body;
   if (!title) return res.status(400).json({ error: 'title required' });
-  const query = [title, author].filter(Boolean).join(' ');
-  try {
+
+  const search = async (query) => {
     const [nliRes, googleRes] = await Promise.allSettled([fetchNLI(query), fetchGoogle(query)]);
     const nliBooks    = nliRes.status    === 'fulfilled' ? nliRes.value    : [];
     const googleBooks = googleRes.status === 'fulfilled' ? googleRes.value : [];
-    const merged      = mergeNLIAndGoogle(nliBooks, googleBooks);
-    const matches     = merged
+    return mergeNLIAndGoogle(nliBooks, googleBooks);
+  };
+
+  try {
+    let merged = await search([title, author].filter(Boolean).join(' '));
+    // Retry with title only if no results
+    if (merged.length === 0 && author) merged = await search(title);
+
+    const matches = merged
       .map(b => ({ ...b, _score: scoreResult(b, title) }))
       .sort((a, b) => b._score - a._score)
       .slice(0, 5)

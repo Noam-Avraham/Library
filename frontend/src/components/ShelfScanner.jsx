@@ -47,11 +47,11 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
   const catalogSelected = source === 'catalog';
 
   return (
-    <div className="flex flex-col sm:flex-row gap-2">
+    <div className="flex flex-row gap-2">
 
       {/* ── Gemini panel ── */}
       <div
-        className="flex-1 flex gap-2 p-3 cursor-pointer transition-all"
+        className="flex-1 flex gap-1.5 p-2 sm:p-3 cursor-pointer transition-all"
         style={{
           background: geminiSelected ? 'rgba(180,130,30,0.15)' : 'rgba(255,255,255,0.04)',
           border: `2px solid ${geminiSelected ? '#d97706' : 'rgba(255,255,255,0.08)'}`,
@@ -60,10 +60,10 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
       >
         <RadioDot active={geminiSelected} />
         <div className="flex-1 min-w-0" dir="rtl">
-          <p className="text-xs mb-1" style={{ color: '#6b7280' }}>📷 זוהה בתמונה</p>
+          <p className="text-xs mb-1" style={{ color: '#6b7280' }}>📷 זוהה</p>
           <div className="flex items-center gap-1.5">
             <ConfidenceDot confidence={identified.confidence} />
-            <p className="text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{identified.title}</p>
+            <p className="text-xs sm:text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{identified.title}</p>
             {identified.language === 'en' && (
               <span className="text-xs px-1 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>EN</span>
             )}
@@ -79,7 +79,7 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
 
       {/* ── Catalog panel ── */}
       <div
-        className={`flex-1 flex gap-2 p-3 transition-all ${hasMatch ? 'cursor-pointer' : 'cursor-default'}`}
+        className={`flex-1 flex gap-1.5 p-2 sm:p-3 transition-all ${hasMatch ? 'cursor-pointer' : 'cursor-default'}`}
         style={{
           background: catalogSelected ? 'rgba(180,130,30,0.15)' : 'rgba(255,255,255,0.04)',
           border: `2px solid ${catalogSelected ? '#d97706' : 'rgba(255,255,255,0.08)'}`,
@@ -93,18 +93,18 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
           <div className="flex-1 flex items-center gap-2" dir="rtl">
             <div className="w-3 h-3 border-2 rounded-full animate-spin flex-shrink-0"
               style={{ borderColor: '#4b5563', borderTopColor: '#94a3b8' }} />
-            <p className="text-xs" style={{ color: '#6b7280' }}>מחפש בקטלוג...</p>
+            <p className="text-xs" style={{ color: '#6b7280' }}>מחפש...</p>
           </div>
         ) : hasMatch ? (
-          <div className="flex gap-2 flex-1 min-w-0">
+          <div className="flex gap-1.5 flex-1 min-w-0">
             {best.thumbnailUrl && (
               <img src={best.thumbnailUrl} alt=""
-                className="w-8 h-12 object-cover flex-shrink-0"
+                className="w-7 h-10 sm:w-8 sm:h-12 object-cover flex-shrink-0"
                 onError={e => { e.target.style.display = 'none'; }} />
             )}
             <div className="flex-1 min-w-0" dir="rtl">
               <p className="text-xs mb-1" style={{ color: mq.color }}>📚 {mq.label}</p>
-              <p className="text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{best.title}</p>
+              <p className="text-xs sm:text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{best.title}</p>
               {best.author && (
                 <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>{best.author}</p>
               )}
