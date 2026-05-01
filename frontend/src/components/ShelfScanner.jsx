@@ -47,7 +47,7 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
   const catalogSelected = source === 'catalog';
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2 items-stretch flex-1 min-w-0">
 
       {/* ── Gemini panel ── */}
       <div
@@ -298,6 +298,24 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
     }
   };
 
+  const shiftMap = (obj, removed) => {
+    const next = {};
+    Object.entries(obj).forEach(([k, v]) => {
+      const ki = Number(k);
+      if (ki < removed) next[ki] = v;
+      else if (ki > removed) next[ki - 1] = v;
+    });
+    return next;
+  };
+
+  const handleDismiss = (i) => {
+    setResults(prev => prev.filter((_, idx) => idx !== i));
+    setSelected(prev => shiftMap(prev, i));
+    setMatchOverride(prev => shiftMap(prev, i));
+    setEditedTitles(prev => shiftMap(prev, i));
+    setEditedAuthors(prev => shiftMap(prev, i));
+  };
+
   const handleUpdateTitles = async () => {
     const existingTitles = new Set(books.map(b => b.title.trim().toLowerCase()));
     const indices = new Set([
@@ -513,27 +531,34 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                 </div>
 
                 {/* Column headers */}
-                <div className="flex gap-2 px-1" dir="rtl">
+                <div className="flex gap-1 px-1" dir="rtl">
                   <p className="flex-1 text-xs font-semibold text-center" style={{ color: '#6b7280' }}>זוהה בתמונה</p>
                   <p className="flex-1 text-xs font-semibold text-center" style={{ color: '#6b7280' }}>נמצא ספר במאגר</p>
+                  <div className="w-5 flex-shrink-0" />
                 </div>
 
                 {/* Book list */}
                 <div className="flex flex-col gap-2">
                   {results.map((item, i) => (
-                    <BookResultRow
-                      key={i}
-                      item={item}
-                      source={selected[i] ?? null}
-                      onSourceChange={src => setSelected(s => ({ ...s, [i]: src }))}
-                      selectedMatch={matchOverride[i]}
-                      onMatchChange={m => setMatchOverride(o => ({ ...o, [i]: m }))}
-                      editMode={editMode}
-                      editedTitle={editedTitles[i]}
-                      onTitleChange={t => setEditedTitles(e => ({ ...e, [i]: t }))}
-                      editedAuthor={editedAuthors[i]}
-                      onAuthorChange={t => setEditedAuthors(e => ({ ...e, [i]: t }))}
-                    />
+                    <div key={i} className="flex gap-1 items-stretch">
+                      <BookResultRow
+                        item={item}
+                        source={selected[i] ?? null}
+                        onSourceChange={src => setSelected(s => ({ ...s, [i]: src }))}
+                        selectedMatch={matchOverride[i]}
+                        onMatchChange={m => setMatchOverride(o => ({ ...o, [i]: m }))}
+                        editMode={editMode}
+                        editedTitle={editedTitles[i]}
+                        onTitleChange={t => setEditedTitles(e => ({ ...e, [i]: t }))}
+                        editedAuthor={editedAuthors[i]}
+                        onAuthorChange={t => setEditedAuthors(e => ({ ...e, [i]: t }))}
+                      />
+                      <button
+                        className="w-5 flex-shrink-0 flex items-center justify-center text-xs transition-colors"
+                        style={{ color: '#4b5563' }}
+                        onClick={() => handleDismiss(i)}
+                        title="הסר">✕</button>
+                    </div>
                   ))}
                 </div>
 
