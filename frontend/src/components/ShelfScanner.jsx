@@ -60,45 +60,44 @@ function BookResultRow({ item, selected, onToggle, selectedMatch, onMatchChange 
         )}
       </div>
 
-      {/* Info */}
+      {/* Info — Gemini identification is always primary */}
       <div className="flex-1 min-w-0" dir="rtl">
-        {/* Duplicate warning */}
-        {isDuplicate && (
-          <p className="text-xs mb-0.5" style={{ color: '#fbbf24' }}>⚠️ כבר קיים בספרייה</p>
-        )}
 
-        {/* Matched title from catalog */}
-        {!enriching && hasMatch && (
-          <p className="text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{best.title}</p>
-        )}
-        {!enriching && hasMatch && (
-          <p className="text-xs truncate mt-0.5" style={{ color: '#94a3b8' }}>{best.author || '—'}</p>
-        )}
-
-        {/* While enriching — show Gemini title as placeholder */}
-        {enriching && (
-          <p className="text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{identified.title}</p>
-        )}
-
-        {/* What Gemini read */}
-        <div className="flex items-center gap-1.5 mt-1">
+        {/* Gemini title — always prominent */}
+        <div className="flex items-center gap-1.5">
           <ConfidenceDot confidence={identified.confidence} />
-          <p className="text-xs truncate" style={{ color: !enriching && hasMatch ? '#6b7280' : '#f5e6cc', fontWeight: !enriching && hasMatch ? 400 : 600 }}>
-            {!enriching && hasMatch ? `זוהה: ${identified.title}` : identified.title}
-          </p>
+          <p className="text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{identified.title}</p>
           {identified.language === 'en' && (
-            <span className="text-xs px-1" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>EN</span>
+            <span className="text-xs px-1 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>EN</span>
           )}
         </div>
 
-        {enriching && identified.author && (
-          <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>{identified.author}</p>
+        {/* Gemini author */}
+        {identified.author && (
+          <p className="text-xs truncate mt-0.5" style={{ color: '#94a3b8' }}>{identified.author}</p>
         )}
-        {!enriching && !hasMatch && identified.author && (
-          <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>{identified.author}</p>
+
+        {/* Catalog status */}
+        {enriching && (
+          <p className="text-xs mt-1" style={{ color: '#6b7280' }}>מחפש בקטלוג...</p>
+        )}
+        {!enriching && hasMatch && (
+          <div className="mt-1">
+            <p className="text-xs" style={{ color: '#4ade80' }}>
+              ✓ נמצא בקטלוג: <span className="font-medium">{best.title}</span>
+            </p>
+            {best.author && best.author !== identified.author && (
+              <p className="text-xs" style={{ color: '#6b7280' }}>{best.author}</p>
+            )}
+          </div>
         )}
         {!enriching && !hasMatch && (
-          <p className="text-xs mt-1" style={{ color: '#f87171' }}>לא נמצא בקטלוג</p>
+          <p className="text-xs mt-1" style={{ color: '#6b7280' }}>לא נמצא בקטלוג</p>
+        )}
+
+        {/* Duplicate warning */}
+        {isDuplicate && (
+          <p className="text-xs mt-0.5" style={{ color: '#fbbf24' }}>⚠️ כבר קיים בספרייה</p>
         )}
 
         {/* Match selector */}
