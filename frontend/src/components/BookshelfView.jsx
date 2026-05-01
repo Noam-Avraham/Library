@@ -183,7 +183,7 @@ const GROUPED_SORTS = ['location', 'owner', 'genre'];
 
 // ── Grid view ─────────────────────────────────────────────────────────────────
 function GridView({ books, sortBy, statusFilter, onTransfer, onDelete, onEdit, onReview }) {
-  if (statusFilter === 'מושאל' || statusFilter === 'רשימת משאלות' || GROUPED_SORTS.includes(sortBy) || !statusFilter) {
+  if (GROUPED_SORTS.includes(sortBy) || statusFilter === 'מושאל' || statusFilter === 'רשימת משאלות') {
     const groups = groupBooks(books, sortBy, undefined, statusFilter);
     return (
       <div className="space-y-10">
