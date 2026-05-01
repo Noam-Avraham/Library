@@ -37,7 +37,7 @@ function RadioDot({ active }) {
 }
 
 // source: 'gemini' | 'catalog' | null
-function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchChange, editMode, editedTitle, onTitleChange }) {
+function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchChange, editMode, editedTitle, onTitleChange, editedAuthor, onAuthorChange }) {
   const { identified, matches, enriching, isDuplicate } = item;
   const best     = selectedMatch ?? matches[0];
   const hasMatch = matches.length > 0;
@@ -77,9 +77,18 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
               <span className="text-xs px-1 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>EN</span>
             )}
           </div>
-          {identified.author && (
+          {editMode ? (
+            <input
+              className="text-xs mt-0.5 w-full"
+              style={{ color: '#94a3b8', background: 'transparent', borderBottom: '1px solid #4b5563', outline: 'none' }}
+              value={editedAuthor ?? identified.author ?? ''}
+              placeholder="מחבר..."
+              onChange={e => onAuthorChange(e.target.value)}
+              onClick={e => e.stopPropagation()}
+            />
+          ) : identified.author ? (
             <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>{identified.author}</p>
-          )}
+          ) : null}
           {isDuplicate?.gemini && (
             <p className="text-xs mt-1" style={{ color: '#fbbf24' }}>⚠️ כבר קיים</p>
           )}
@@ -119,6 +128,9 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
               {isDuplicate?.catalog && (
                 <p className="text-xs mt-1" style={{ color: '#fbbf24' }}>⚠️ כבר קיים</p>
               )}
+              <p className="text-xs mt-1" style={{ color: '#374151' }}>
+                {best.source === 'nli' ? 'הספרייה הלאומית' : 'Google Books'}
+              </p>
               {matches.length > 1 && (
                 <select
                   className="mt-1 text-xs px-1 py-0.5 w-full"
@@ -162,13 +174,14 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
   const [dragging, setDragging]         = useState(false);
   const [editMode, setEditMode]         = useState(false);
   const [editedTitles, setEditedTitles] = useState({});
+  const [editedAuthors, setEditedAuthors] = useState({});
   const fileRef = useRef();
 
   const reset = () => {
     setPhase('upload'); setImagePreview(null); setImageBase64(null);
     setResults([]); setSelected({}); setMatchOverride({});
     setError(''); setAdding(false); setCustomLocation('');
-    setEditMode(false); setEditedTitles({});
+    setEditMode(false); setEditedTitles({}); setEditedAuthors({});
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -287,25 +300,37 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
 
   const handleUpdateTitles = async () => {
     const existingTitles = new Set(books.map(b => b.title.trim().toLowerCase()));
-    const changed = Object.entries(editedTitles)
-      .map(([i, t]) => ({ i: Number(i), newTitle: t.trim(), author: results[Number(i)].identified.author }))
-      .filter(({ i, newTitle }) => newTitle && newTitle !== results[i].identified.title);
+    const indices = new Set([
+      ...Object.keys(editedTitles).map(Number),
+      ...Object.keys(editedAuthors).map(Number),
+    ]);
+    const changed = [...indices]
+      .map(i => ({
+        i,
+        newTitle:  (editedTitles[i]  ?? results[i].identified.title).trim(),
+        newAuthor: (editedAuthors[i] ?? results[i].identified.author ?? '').trim(),
+      }))
+      .filter(({ i, newTitle, newAuthor }) =>
+        (newTitle  && newTitle  !== results[i].identified.title) ||
+        (newAuthor !== (results[i].identified.author ?? ''))
+      );
 
     setEditMode(false);
     setEditedTitles({});
+    setEditedAuthors({});
     if (!changed.length) return;
 
-    // Update titles and mark as enriching
+    // Update identified fields and mark as enriching
     setResults(prev => prev.map((r, i) => {
       const c = changed.find(x => x.i === i);
       if (!c) return r;
-      return { ...r, identified: { ...r.identified, title: c.newTitle }, matches: [], enriching: true };
+      return { ...r, identified: { ...r.identified, title: c.newTitle, author: c.newAuthor }, matches: [], enriching: true };
     }));
 
     // Re-enrich changed books
-    for (const { i, newTitle, author } of changed) {
+    for (const { i, newTitle, newAuthor } of changed) {
       try {
-        const matches = await api.scanEnrich(newTitle, author);
+        const matches = await api.scanEnrich(newTitle, newAuthor);
         const bestScore = matches[0]?.matchScore ?? 0;
         const isDuplicate = {
           gemini:  existingTitles.has(newTitle.toLowerCase()),
@@ -506,6 +531,8 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                       editMode={editMode}
                       editedTitle={editedTitles[i]}
                       onTitleChange={t => setEditedTitles(e => ({ ...e, [i]: t }))}
+                      editedAuthor={editedAuthors[i]}
+                      onAuthorChange={t => setEditedAuthors(e => ({ ...e, [i]: t }))}
                     />
                   ))}
                 </div>
