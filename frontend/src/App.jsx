@@ -167,6 +167,7 @@ activeTab={activeTab}
         onClose={() => setScanOpen(false)}
         familyMembers={familyMembers}
         onBulkAdd={fetchBooks}
+        books={books}
       />
 
       {/* Modals — always mounted so they can animate out */}

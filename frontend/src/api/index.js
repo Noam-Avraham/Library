@@ -30,9 +30,15 @@ export const api = {
   // Stats
   getStats: () => request('/stats'),
 
-  // Shelf scanner
+  // Shelf scanner (legacy — kept for easy rollback)
   scanShelf: (imageBase64, mediaType, hint) =>
     request('/scan-shelf', { method: 'POST', body: JSON.stringify({ imageBase64, mediaType, hint }) }),
+
+  // Shelf scanner v2 — two-phase
+  scanIdentify: (imageBase64, mediaType) =>
+    request('/scan-identify', { method: 'POST', body: JSON.stringify({ imageBase64, mediaType }) }),
+  scanEnrich: (title, author) =>
+    request('/scan-enrich', { method: 'POST', body: JSON.stringify({ title, author }) }),
 
   // Reviews
   getReviews: (bookId) => request(`/reviews?book_id=${bookId}`),

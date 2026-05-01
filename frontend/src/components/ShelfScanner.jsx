@@ -21,7 +21,7 @@ function ConfidenceDot({ confidence }) {
 }
 
 function BookResultRow({ item, selected, onToggle, selectedMatch, onMatchChange }) {
-  const { identified, matches } = item;
+  const { identified, matches, enriching, isDuplicate } = item;
   const best = selectedMatch ?? matches[0];
   const hasMatch = matches.length > 0;
 
@@ -49,45 +49,60 @@ function BookResultRow({ item, selected, onToggle, selectedMatch, onMatchChange 
 
       {/* Thumbnail */}
       <div className="flex-shrink-0 w-12 h-16 overflow-hidden" style={{ background: '#2d2547' }}>
-        {best?.thumbnailUrl
-          ? <img src={best.thumbnailUrl} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
-          : <div className="w-full h-full flex items-center justify-center text-2xl">📖</div>
-        }
+        {enriching ? (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: '#6b7280', borderTopColor: 'transparent' }} />
+          </div>
+        ) : best?.thumbnailUrl ? (
+          <img src={best.thumbnailUrl} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-2xl">📖</div>
+        )}
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0" dir="rtl">
-        {/* API match title */}
-        {hasMatch && (
-          <p className="text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>
-            {best.title}
-          </p>
-        )}
-        {hasMatch && (
-          <p className="text-xs truncate mt-0.5" style={{ color: '#94a3b8' }}>
-            {best.author || '—'}
-          </p>
+        {/* Duplicate warning */}
+        {isDuplicate && (
+          <p className="text-xs mb-0.5" style={{ color: '#fbbf24' }}>⚠️ כבר קיים בספרייה</p>
         )}
 
-        {/* What Claude read — always shown */}
+        {/* Matched title from catalog */}
+        {!enriching && hasMatch && (
+          <p className="text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{best.title}</p>
+        )}
+        {!enriching && hasMatch && (
+          <p className="text-xs truncate mt-0.5" style={{ color: '#94a3b8' }}>{best.author || '—'}</p>
+        )}
+
+        {/* While enriching — show Gemini title as placeholder */}
+        {enriching && (
+          <p className="text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{identified.title}</p>
+        )}
+
+        {/* What Gemini read */}
         <div className="flex items-center gap-1.5 mt-1">
           <ConfidenceDot confidence={identified.confidence} />
-          <p className="text-xs truncate" style={{ color: hasMatch ? '#6b7280' : '#f5e6cc', fontWeight: hasMatch ? 400 : 600 }}>
-            {hasMatch ? `זוהה: ${identified.title}` : identified.title}
+          <p className="text-xs truncate" style={{ color: !enriching && hasMatch ? '#6b7280' : '#f5e6cc', fontWeight: !enriching && hasMatch ? 400 : 600 }}>
+            {!enriching && hasMatch ? `זוהה: ${identified.title}` : identified.title}
           </p>
           {identified.language === 'en' && (
             <span className="text-xs px-1" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>EN</span>
           )}
         </div>
-        {!hasMatch && identified.author && (
+
+        {enriching && identified.author && (
           <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>{identified.author}</p>
         )}
-        {!hasMatch && (
+        {!enriching && !hasMatch && identified.author && (
+          <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>{identified.author}</p>
+        )}
+        {!enriching && !hasMatch && (
           <p className="text-xs mt-1" style={{ color: '#f87171' }}>לא נמצא בקטלוג</p>
         )}
 
         {/* Match selector */}
-        {matches.length > 1 && (
+        {!enriching && matches.length > 1 && (
           <select
             className="mt-1 text-xs px-1 py-0.5 w-full"
             style={{ background: '#2d2547', color: '#94a3b8', border: '1px solid #4b5563' }}
@@ -105,12 +120,11 @@ function BookResultRow({ item, selected, onToggle, selectedMatch, onMatchChange 
   );
 }
 
-export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }) {
+export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, books = [] }) {
   const [phase, setPhase]               = useState('upload');
   const [imagePreview, setImagePreview] = useState(null);
   const [imageBase64, setImageBase64]   = useState(null);
   const [mediaType, setMediaType]       = useState('image/jpeg');
-  const [hint, setHint]                 = useState('');
   const [results, setResults]           = useState([]);
   const [selected, setSelected]         = useState({});
   const [matchOverride, setMatchOverride] = useState({});
@@ -126,7 +140,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
   const reset = () => {
     setPhase('upload'); setImagePreview(null); setImageBase64(null);
     setResults([]); setSelected({}); setMatchOverride({});
-    setError(''); setAdding(false); setCustomLocation(''); setHint('');
+    setError(''); setAdding(false); setCustomLocation('');
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -164,16 +178,38 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
     if (!imageBase64) return;
     setPhase('scanning'); setError('');
     try {
-      const hintNum = hint ? parseInt(hint, 10) : undefined;
-      const data = await api.scanShelf(imageBase64, mediaType, hintNum);
-      setResults(data);
+      // Step 1: Gemini identifies books — show results immediately
+      const identified = await api.scanIdentify(imageBase64, mediaType);
+      const existingTitles = new Set(books.map(b => b.title.trim().toLowerCase()));
+
+      const initial = identified.map(id => ({
+        identified: id,
+        matches: [],
+        enriching: true,
+        isDuplicate: existingTitles.has(id.title.trim().toLowerCase()),
+      }));
+      setResults(initial);
+
       const sel = {};
-      // Pre-select only high/medium confidence with a match
-      data.forEach((r, i) => {
-        sel[i] = r.matches.length > 0 && r.identified.confidence !== 'low';
-      });
+      identified.forEach((id, i) => { sel[i] = id.confidence !== 'low'; });
       setSelected(sel);
       setPhase('results');
+
+      // Step 2: Enrich each book in background
+      identified.forEach(async (id, i) => {
+        try {
+          const matches = await api.scanEnrich(id.title, id.author);
+          const matchedTitle = (matches[0]?.title ?? id.title).trim().toLowerCase();
+          setResults(prev => prev.map((r, idx) => idx !== i ? r : {
+            ...r,
+            matches,
+            enriching: false,
+            isDuplicate: existingTitles.has(matchedTitle),
+          }));
+        } catch {
+          setResults(prev => prev.map((r, idx) => idx !== i ? r : { ...r, enriching: false }));
+        }
+      });
     } catch (err) {
       setError(err.message || 'שגיאה בסריקה');
       setPhase('upload');
@@ -215,9 +251,9 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
     }
   };
 
-  const withMatch    = results.filter(r => r.matches.length > 0);
-  const withoutMatch = results.filter(r => r.matches.length === 0);
-  const selectedCount = Object.values(selected).filter(Boolean).length;
+  const enrichingCount = results.filter(r => r.enriching).length;
+  const withMatch      = results.filter(r => !r.enriching && r.matches.length > 0);
+  const selectedCount  = Object.values(selected).filter(Boolean).length;
 
   if (!open) return null;
 
@@ -291,21 +327,6 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
                   </div>
                 </div>
 
-                {/* Hint */}
-                <div dir="rtl">
-                  <label className="text-xs mb-1 block" style={{ color: '#94a3b8' }}>כמה ספרים בערך בתמונה? (אופציונלי)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="200"
-                    value={hint}
-                    onChange={e => setHint(e.target.value)}
-                    placeholder="למשל: 20"
-                    className="w-28 px-3 py-2 text-sm"
-                    style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}
-                  />
-                </div>
-
                 {/* Drop zone */}
                 <div
                   className="flex flex-col items-center justify-center gap-3 cursor-pointer transition-all"
@@ -363,8 +384,9 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
                 {/* Summary */}
                 <div dir="rtl" className="flex flex-col gap-1">
                   <p className="text-sm font-medium" style={{ color: '#f5e6cc' }}>
-                    קלוד זיהה <strong>{results.length}</strong> ספרים
-                    {withMatch.length > 0 && <> — נמצאו התאמות לקטלוג עבור <strong>{withMatch.length}</strong></>}
+                    זוהו <strong>{results.length}</strong> ספרים
+                    {enrichingCount === 0 && withMatch.length > 0 && <> — נמצאו התאמות לקטלוג עבור <strong>{withMatch.length}</strong></>}
+                    {enrichingCount > 0 && <span style={{ color: '#6b7280' }}> — מחפש בקטלוג...</span>}
                   </p>
                   <div className="flex items-center gap-3 text-xs" style={{ color: '#6b7280' }}>
                     <span><span style={{ color: CONF_COLOR.high }}>●</span> ברור</span>
@@ -373,76 +395,33 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd }
                   </div>
                 </div>
 
-                {/* Books with catalog match */}
-                {withMatch.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between" dir="rtl">
-                      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#d97706' }}>
-                        נמצאו בקטלוג ({withMatch.length})
-                      </p>
-                      <button
-                        className="text-xs underline"
-                        style={{ color: '#6b7280' }}
-                        onClick={() => {
-                          const s = { ...selected };
-                          const indices = results.map((r, i) => r.matches.length > 0 ? i : null).filter(i => i !== null);
-                          const allOn = indices.every(i => s[i]);
-                          indices.forEach(i => { s[i] = !allOn; });
-                          setSelected(s);
-                        }}
-                      >
-                        {results.filter((r, i) => r.matches.length > 0 && selected[i]).length === withMatch.length ? 'בטל הכל' : 'בחר הכל'}
-                      </button>
-                    </div>
-                    {results.map((item, i) => item.matches.length > 0 && (
-                      <BookResultRow
-                        key={i}
-                        item={item}
-                        selected={!!selected[i]}
-                        onToggle={() => setSelected(s => ({ ...s, [i]: !s[i] }))}
-                        selectedMatch={matchOverride[i]}
-                        onMatchChange={m => setMatchOverride(o => ({ ...o, [i]: m }))}
-                      />
-                    ))}
+                {/* Unified book list */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-end" dir="rtl">
+                    <button
+                      className="text-xs underline"
+                      style={{ color: '#6b7280' }}
+                      onClick={() => {
+                        const allOn = results.every((_, i) => selected[i]);
+                        const s = {};
+                        results.forEach((_, i) => { s[i] = !allOn; });
+                        setSelected(s);
+                      }}
+                    >
+                      {results.every((_, i) => selected[i]) ? 'בטל הכל' : 'בחר הכל'}
+                    </button>
                   </div>
-                )}
-
-                {/* Books without catalog match */}
-                {withoutMatch.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between" dir="rtl">
-                      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#94a3b8' }}>
-                        זוהו אך לא נמצאו בקטלוג ({withoutMatch.length})
-                      </p>
-                      <button
-                        className="text-xs underline"
-                        style={{ color: '#6b7280' }}
-                        onClick={() => {
-                          const s = { ...selected };
-                          const indices = results.map((r, i) => r.matches.length === 0 ? i : null).filter(i => i !== null);
-                          const allOn = indices.every(i => s[i]);
-                          indices.forEach(i => { s[i] = !allOn; });
-                          setSelected(s);
-                        }}
-                      >
-                        {results.filter((r, i) => r.matches.length === 0 && selected[i]).length === withoutMatch.length ? 'בטל הכל' : 'בחר הכל'}
-                      </button>
-                    </div>
-                    <p className="text-xs" dir="rtl" style={{ color: '#6b7280' }}>
-                      ספרים אלו יתווספו עם הפרטים שקלוד קרא מהספינה
-                    </p>
-                    {results.map((item, i) => item.matches.length === 0 && (
-                      <BookResultRow
-                        key={i}
-                        item={item}
-                        selected={!!selected[i]}
-                        onToggle={() => setSelected(s => ({ ...s, [i]: !s[i] }))}
-                        selectedMatch={undefined}
-                        onMatchChange={() => {}}
-                      />
-                    ))}
-                  </div>
-                )}
+                  {results.map((item, i) => (
+                    <BookResultRow
+                      key={i}
+                      item={item}
+                      selected={!!selected[i]}
+                      onToggle={() => setSelected(s => ({ ...s, [i]: !s[i] }))}
+                      selectedMatch={matchOverride[i]}
+                      onMatchChange={m => setMatchOverride(o => ({ ...o, [i]: m }))}
+                    />
+                  ))}
+                </div>
 
                 <button
                   className="text-xs underline self-center"

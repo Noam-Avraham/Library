@@ -18,8 +18,9 @@ const aiLimiter = rateLimit({
   max: 5,
   message: { error: 'יותר מדי בקשות — נסה שוב עוד דקה' },
 });
-app.use('/api/scan-shelf', aiLimiter);
-app.use('/api/next-book',  aiLimiter);
+app.use('/api/scan-shelf',    aiLimiter);
+app.use('/api/scan-identify', aiLimiter);
+app.use('/api/next-book',     aiLimiter);
 
 const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes';
 const NLI_API          = 'https://api.nli.org.il/openlibrary/search';
@@ -560,6 +561,62 @@ app.post('/api/scan-shelf', async (req, res) => {
   );
 
   res.json(results);
+});
+
+// ── Shelf Scanner v2 — Step 1: Gemini identification only ────────────────────
+app.post('/api/scan-identify', async (req, res) => {
+  const { imageBase64, mediaType = 'image/jpeg' } = req.body;
+  if (!imageBase64) return res.status(400).json({ error: 'imageBase64 required' });
+  if (!ALLOWED_IMAGE_TYPES.has(mediaType)) return res.status(400).json({ error: 'סוג קובץ לא נתמך' });
+  if (imageBase64.length > 15_000_000) return res.status(400).json({ error: 'התמונה גדולה מדי — מקסימום 20MB' });
+
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+
+  try {
+    const genAI = new GoogleGenerativeAI(geminiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const result = await model.generateContent([
+      { inlineData: { mimeType: mediaType, data: imageBase64 } },
+      `זהה את כל הספרים הנראים בתמונה זו של מדף ספרים.
+החזר JSON בלבד (ללא markdown, ללא הסברים) עם מבנה זה:
+{"books":[{"title":"...","author":"...","language":"he|en|other","confidence":"high|medium|low"}]}
+
+כללים:
+- title: הכותרת בדיוק כפי שמודפסת על העמוד
+- author: שם המחבר, או מחרוזת ריקה אם לא נראה
+- language: שפת הטקסט העיקרית על העמוד
+- confidence: high=ברור לחלוטין, medium=רוב הכותרת ברורה, low=חלקי או מעורפל
+- דווח על כל ספר גם אם הוא חלקי, בזווית, או בקצה התמונה
+- טקסט עברי נקרא מימין לשמאל
+- אל תתרגם ואל תתקן שגיאות כתיב`,
+    ]);
+    const raw = result.response.text().trim().replace(/^```json\s*/i, '').replace(/```$/, '').trim();
+    res.json(JSON.parse(raw).books ?? []);
+  } catch (err) {
+    res.status(500).json({ error: `Gemini error: ${err.message}` });
+  }
+});
+
+// ── Shelf Scanner v2 — Step 2: Catalog enrichment for one book ───────────────
+app.post('/api/scan-enrich', async (req, res) => {
+  const { title, author } = req.body;
+  if (!title) return res.status(400).json({ error: 'title required' });
+  const query = [title, author].filter(Boolean).join(' ');
+  try {
+    const [nliRes, googleRes] = await Promise.allSettled([fetchNLI(query), fetchGoogle(query)]);
+    const nliBooks    = nliRes.status    === 'fulfilled' ? nliRes.value    : [];
+    const googleBooks = googleRes.status === 'fulfilled' ? googleRes.value : [];
+    const merged      = mergeNLIAndGoogle(nliBooks, googleBooks);
+    const matches     = merged
+      .map(b => ({ ...b, _score: scoreResult(b, title) }))
+      .sort((a, b) => b._score - a._score)
+      .slice(0, 5)
+      .map(({ _score, ...b }) => b);
+    res.json(matches);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Start (after DB init) ────────────────────────────────────────────────────
