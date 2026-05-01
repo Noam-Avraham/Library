@@ -116,7 +116,7 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
           <div className="flex gap-1.5 flex-1 min-w-0">
             {best.thumbnailUrl && (
               <img src={best.thumbnailUrl} alt=""
-                className="hidden sm:block w-8 h-12 object-cover flex-shrink-0"
+                className="w-6 h-9 sm:w-8 sm:h-12 object-cover flex-shrink-0"
                 onError={e => { e.target.style.display = 'none'; }} />
             )}
             <div className="flex-1 min-w-0" dir="rtl">
@@ -523,8 +523,9 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                           }}>
                           {results.every((_, i) => selected[i] != null) ? 'בטל הכל' : 'בחר הכל'}
                         </button>
-                        <button className="text-xs" style={{ color: '#6b7280' }}
-                          onClick={() => setEditMode(true)} title="ערוך כותרות">✏️</button>
+                        <button className="text-xs px-2 py-1 flex items-center gap-1"
+                          style={{ color: '#94a3b8', border: '1px solid rgba(255,255,255,0.12)' }}
+                          onClick={() => setEditMode(true)}>✏️ ערוך</button>
                       </>
                     )}
                   </div>
@@ -538,7 +539,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                     <span style={{ color: '#d97706' }}> שמאל</span> — הספר שנמצא במאגר
                   </p>
                   <p className="text-xs" style={{ color: '#6b7280' }}>
-                    ✏️ ערוך כותרת או מחבר ולחץ <strong style={{ color: '#9ca3af' }}>עדכן</strong> לחיפוש מחדש · ✕ הסר זיהוי שגוי
+                    ✏️ ערוך כותרת או מחבר ולחץ <strong style={{ color: '#9ca3af' }}>עדכן</strong> לחיפוש מחדש · ✕ הסר זיהוי שגוי · במאגר מוצגת התוצאה הטובה ביותר, ניתן לבחור מתוך עד 5 תוצאות
                   </p>
                 </div>
 

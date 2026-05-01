@@ -102,6 +102,7 @@ function parseNLIRecord(rec) {
     publishedDate: date ? date.slice(0, 4) : '',
     language:     lang,
     source:       'nli',
+    type:         dc(rec, 'type') || 'book',
   };
 }
 
@@ -195,6 +196,11 @@ function scoreResult(book, query, author = '') {
   if (book.author)        score += 1;
   if (book.translator)    score += 1;
   if (book.publishedDate) score += 1;
+
+  // ── Penalty: academic non-book material ──────────────────────────────────
+  if (book.type && book.type !== 'book') score -= 15;
+  const serialPattern = /\b(journal|annual|quarterly|proceedings|transactions|bulletin|volume \d|vol\.\s*\d)/i;
+  if (serialPattern.test(book.title)) score -= 10;
 
   return score;
 }
