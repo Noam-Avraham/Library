@@ -4,9 +4,8 @@ import { api } from '../api/index.js';
 import { DEFAULT_OWNER } from '../data/config.js';
 import { locationOptions } from '../data/members.js';
 
-const OVERLAY = { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const OVERLAY  = { position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const CARD_BG  = { background: '#1e1a2e', border: '1px solid rgba(180,130,30,0.25)', borderRadius: 0 };
-
 const CONF_COLOR = { high: '#4ade80', medium: '#fbbf24', low: '#f87171' };
 const CONF_LABEL = { high: 'ברור', medium: 'חלקי', low: 'לא בטוח' };
 
@@ -20,99 +19,117 @@ function ConfidenceDot({ confidence }) {
   );
 }
 
-function BookResultRow({ item, selected, onToggle, selectedMatch, onMatchChange }) {
-  const { identified, matches, enriching, isDuplicate } = item;
-  const best = selectedMatch ?? matches[0];
-  const hasMatch = matches.length > 0;
+function matchQuality(score) {
+  if (score >= 100) return { label: 'התאמה גבוהה', color: '#4ade80' };
+  if (score >= 40)  return { label: 'התאמה חלקית', color: '#fbbf24' };
+  return               { label: 'התאמה חלשה',  color: '#f87171' };
+}
 
+function RadioDot({ active }) {
   return (
     <div
-      className="flex gap-3 p-3 cursor-pointer transition-all"
-      style={{
-        background: selected ? 'rgba(180,130,30,0.12)' : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${selected ? 'rgba(180,130,30,0.5)' : 'rgba(255,255,255,0.08)'}`,
-      }}
-      onClick={onToggle}
+      className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5"
+      style={{ border: `2px solid ${active ? '#d97706' : '#4b5563'}`, background: active ? '#d97706' : 'transparent' }}
     >
-      {/* Checkbox */}
-      <div className="flex-shrink-0 mt-1">
-        <div
-          className="w-5 h-5 flex items-center justify-center"
-          style={{
-            background: selected ? '#d97706' : 'transparent',
-            border: `2px solid ${selected ? '#d97706' : '#6b7280'}`,
-          }}
-        >
-          {selected && <span className="text-white text-xs font-bold">✓</span>}
-        </div>
-      </div>
+      {active && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+    </div>
+  );
+}
 
-      {/* Thumbnail */}
-      <div className="flex-shrink-0 w-12 h-16 overflow-hidden" style={{ background: '#2d2547' }}>
-        {enriching ? (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: '#6b7280', borderTopColor: 'transparent' }} />
-          </div>
-        ) : best?.thumbnailUrl ? (
-          <img src={best.thumbnailUrl} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-2xl">📖</div>
-        )}
-      </div>
+// source: 'gemini' | 'catalog' | null
+function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchChange }) {
+  const { identified, matches, enriching, isDuplicate } = item;
+  const best     = selectedMatch ?? matches[0];
+  const hasMatch = matches.length > 0;
+  const mq       = best ? matchQuality(best.matchScore ?? 0) : null;
 
-      {/* Info — Gemini identification is always primary */}
-      <div className="flex-1 min-w-0" dir="rtl">
+  const geminiSelected  = source === 'gemini';
+  const catalogSelected = source === 'catalog';
 
-        {/* Gemini title — always prominent */}
-        <div className="flex items-center gap-1.5">
-          <ConfidenceDot confidence={identified.confidence} />
-          <p className="text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{identified.title}</p>
-          {identified.language === 'en' && (
-            <span className="text-xs px-1 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>EN</span>
-          )}
-        </div>
+  return (
+    <div className="flex flex-col sm:flex-row gap-2">
 
-        {/* Gemini author */}
-        {identified.author && (
-          <p className="text-xs truncate mt-0.5" style={{ color: '#94a3b8' }}>{identified.author}</p>
-        )}
-
-        {/* Catalog status */}
-        {enriching && (
-          <p className="text-xs mt-1" style={{ color: '#6b7280' }}>מחפש בקטלוג...</p>
-        )}
-        {!enriching && hasMatch && (
-          <div className="mt-1">
-            <p className="text-xs" style={{ color: '#4ade80' }}>
-              ✓ נמצא בקטלוג: <span className="font-medium">{best.title}</span>
-            </p>
-            {best.author && best.author !== identified.author && (
-              <p className="text-xs" style={{ color: '#6b7280' }}>{best.author}</p>
+      {/* ── Gemini panel ── */}
+      <div
+        className="flex-1 flex gap-2 p-3 cursor-pointer transition-all"
+        style={{
+          background: geminiSelected ? 'rgba(180,130,30,0.15)' : 'rgba(255,255,255,0.04)',
+          border: `2px solid ${geminiSelected ? '#d97706' : 'rgba(255,255,255,0.08)'}`,
+        }}
+        onClick={() => onSourceChange(geminiSelected ? null : 'gemini')}
+      >
+        <RadioDot active={geminiSelected} />
+        <div className="flex-1 min-w-0" dir="rtl">
+          <p className="text-xs mb-1" style={{ color: '#6b7280' }}>📷 זוהה בתמונה</p>
+          <div className="flex items-center gap-1.5">
+            <ConfidenceDot confidence={identified.confidence} />
+            <p className="text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{identified.title}</p>
+            {identified.language === 'en' && (
+              <span className="text-xs px-1 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>EN</span>
             )}
           </div>
-        )}
-        {!enriching && !hasMatch && (
-          <p className="text-xs mt-1" style={{ color: '#6b7280' }}>לא נמצא בקטלוג</p>
-        )}
+          {identified.author && (
+            <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>{identified.author}</p>
+          )}
+          {isDuplicate?.gemini && (
+            <p className="text-xs mt-1" style={{ color: '#fbbf24' }}>⚠️ כבר קיים בספרייה</p>
+          )}
+        </div>
+      </div>
 
-        {/* Duplicate warning */}
-        {isDuplicate && (
-          <p className="text-xs mt-0.5" style={{ color: '#fbbf24' }}>⚠️ כבר קיים בספרייה</p>
-        )}
+      {/* ── Catalog panel ── */}
+      <div
+        className={`flex-1 flex gap-2 p-3 transition-all ${hasMatch ? 'cursor-pointer' : 'cursor-default'}`}
+        style={{
+          background: catalogSelected ? 'rgba(180,130,30,0.15)' : 'rgba(255,255,255,0.04)',
+          border: `2px solid ${catalogSelected ? '#d97706' : 'rgba(255,255,255,0.08)'}`,
+          opacity: !enriching && !hasMatch ? 0.45 : 1,
+        }}
+        onClick={() => { if (hasMatch) onSourceChange(catalogSelected ? null : 'catalog'); }}
+      >
+        <RadioDot active={catalogSelected} />
 
-        {/* Match selector */}
-        {!enriching && matches.length > 1 && (
-          <select
-            className="mt-1 text-xs px-1 py-0.5 w-full"
-            style={{ background: '#2d2547', color: '#94a3b8', border: '1px solid #4b5563' }}
-            value={matches.indexOf(selectedMatch ?? matches[0])}
-            onChange={e => { e.stopPropagation(); onMatchChange(matches[Number(e.target.value)]); }}
-            onClick={e => e.stopPropagation()}
-          >
-            {matches.map((m, i) => (
-              <option key={i} value={i}>{m.title} — {m.author || '?'}</option>
-            ))}
-          </select>
+        {enriching ? (
+          <div className="flex-1 flex items-center gap-2" dir="rtl">
+            <div className="w-3 h-3 border-2 rounded-full animate-spin flex-shrink-0"
+              style={{ borderColor: '#4b5563', borderTopColor: '#94a3b8' }} />
+            <p className="text-xs" style={{ color: '#6b7280' }}>מחפש בקטלוג...</p>
+          </div>
+        ) : hasMatch ? (
+          <div className="flex gap-2 flex-1 min-w-0">
+            {best.thumbnailUrl && (
+              <img src={best.thumbnailUrl} alt=""
+                className="w-8 h-12 object-cover flex-shrink-0"
+                onError={e => { e.target.style.display = 'none'; }} />
+            )}
+            <div className="flex-1 min-w-0" dir="rtl">
+              <p className="text-xs mb-1" style={{ color: mq.color }}>📚 {mq.label}</p>
+              <p className="text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{best.title}</p>
+              {best.author && (
+                <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>{best.author}</p>
+              )}
+              {isDuplicate?.catalog && (
+                <p className="text-xs mt-1" style={{ color: '#fbbf24' }}>⚠️ כבר קיים בספרייה</p>
+              )}
+              {matches.length > 1 && (
+                <select
+                  className="mt-1 text-xs px-1 py-0.5 w-full"
+                  style={{ background: '#2d2547', color: '#94a3b8', border: '1px solid #4b5563' }}
+                  value={matches.indexOf(selectedMatch ?? matches[0])}
+                  onChange={e => { e.stopPropagation(); onMatchChange(matches[Number(e.target.value)]); }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  {matches.map((m, i) => (
+                    <option key={i} value={i}>{m.title} — {m.author || '?'}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center" dir="rtl">
+            <p className="text-xs" style={{ color: '#4b5563' }}>לא נמצא בקטלוג</p>
+          </div>
         )}
       </div>
     </div>
@@ -125,6 +142,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
   const [imageBase64, setImageBase64]   = useState(null);
   const [mediaType, setMediaType]       = useState('image/jpeg');
   const [results, setResults]           = useState([]);
+  // source per index: 'gemini' | 'catalog' | null
   const [selected, setSelected]         = useState({});
   const [matchOverride, setMatchOverride] = useState({});
   const [owner, setOwner]               = useState(DEFAULT_OWNER);
@@ -177,7 +195,6 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
     if (!imageBase64) return;
     setPhase('scanning'); setError('');
     try {
-      // Step 1: Gemini identifies books — show results immediately
       const identified = await api.scanIdentify(imageBase64, mediaType);
       const existingTitles = new Set(books.map(b => b.title.trim().toLowerCase()));
 
@@ -185,26 +202,30 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
         identified: id,
         matches: [],
         enriching: true,
-        isDuplicate: existingTitles.has(id.title.trim().toLowerCase()),
+        isDuplicate: { gemini: existingTitles.has(id.title.trim().toLowerCase()), catalog: false },
       }));
       setResults(initial);
 
       const sel = {};
-      identified.forEach((id, i) => { sel[i] = id.confidence !== 'low'; });
+      identified.forEach((id, i) => { sel[i] = id.confidence !== 'low' ? 'gemini' : null; });
       setSelected(sel);
       setPhase('results');
 
-      // Step 2: Enrich each book in background
+      // Enrich each book in background
       identified.forEach(async (id, i) => {
         try {
           const matches = await api.scanEnrich(id.title, id.author);
-          const matchedTitle = (matches[0]?.title ?? id.title).trim().toLowerCase();
-          setResults(prev => prev.map((r, idx) => idx !== i ? r : {
-            ...r,
-            matches,
-            enriching: false,
-            isDuplicate: existingTitles.has(matchedTitle),
-          }));
+          const bestScore = matches[0]?.matchScore ?? 0;
+          const catalogTitle = (matches[0]?.title ?? '').trim().toLowerCase();
+          const isDuplicate = {
+            gemini:  existingTitles.has(id.title.trim().toLowerCase()),
+            catalog: matches.length > 0 && existingTitles.has(catalogTitle),
+          };
+          setResults(prev => prev.map((r, idx) => idx !== i ? r : { ...r, matches, enriching: false, isDuplicate }));
+          // Auto-switch to catalog if strong match
+          if (matches.length > 0 && bestScore >= 100) {
+            setSelected(prev => ({ ...prev, [i]: 'catalog' }));
+          }
         } catch {
           setResults(prev => prev.map((r, idx) => idx !== i ? r : { ...r, enriching: false }));
         }
@@ -219,23 +240,26 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
     setAdding(true);
     const finalLocation = location === '__custom__' ? (customLocation || 'בית') : location;
     const toAdd = results
-      .filter((_, i) => selected[i])
+      .filter((_, i) => selected[i] != null)
       .map((item, i) => {
+        if (selected[i] === 'gemini') {
+          return {
+            title: item.identified.title,
+            author: item.identified.author || '',
+            translator: '', thumbnailUrl: '', isbn: '', genre: '', description: '',
+            owner, current_holder: owner, location: finalLocation, status: 'זמין',
+          };
+        }
         const match = matchOverride[i] ?? item.matches[0];
-        // If no API match, use what Claude identified
-        const src = match ?? { title: item.identified.title, author: item.identified.author };
         return {
-          title:        src.title,
-          author:       src.author || '',
-          translator:   src.translator || '',
-          thumbnailUrl: src.thumbnailUrl || '',
-          isbn:         src.isbn || '',
-          genre:        src.genre || '',
-          description:  src.description || '',
-          owner,
-          current_holder: owner,
-          location: finalLocation,
-          status: 'זמין',
+          title:        match.title,
+          author:       match.author || '',
+          translator:   match.translator || '',
+          thumbnailUrl: match.thumbnailUrl || '',
+          isbn:         match.isbn || '',
+          genre:        match.genre || '',
+          description:  match.description || '',
+          owner, current_holder: owner, location: finalLocation, status: 'זמין',
         };
       });
 
@@ -250,9 +274,9 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
     }
   };
 
+  const selectedCount  = Object.values(selected).filter(v => v != null).length;
   const enrichingCount = results.filter(r => r.enriching).length;
   const withMatch      = results.filter(r => !r.enriching && r.matches.length > 0);
-  const selectedCount  = Object.values(selected).filter(Boolean).length;
 
   if (!open) return null;
 
@@ -269,7 +293,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          style={{ ...CARD_BG, position: 'relative', width: '100%', maxWidth: 640, maxHeight: '90vh', display: 'flex', flexDirection: 'column', margin: '0 16px' }}
+          style={{ ...CARD_BG, position: 'relative', width: '100%', maxWidth: 700, maxHeight: '90vh', display: 'flex', flexDirection: 'column', margin: '0 16px' }}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }} dir="rtl">
@@ -289,12 +313,9 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                 <div className="flex gap-3" dir="rtl">
                   <div className="flex-1">
                     <label className="text-xs mb-1 block" style={{ color: '#94a3b8' }}>בעלים</label>
-                    <select
-                      value={owner}
-                      onChange={e => setOwner(e.target.value)}
+                    <select value={owner} onChange={e => setOwner(e.target.value)}
                       className="w-full px-3 py-2 text-sm"
-                      style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}
-                    >
+                      style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}>
                       {familyMembers.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
                     </select>
                   </div>
@@ -307,21 +328,15 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                         else setLocation(e.target.value);
                       }}
                       className="w-full px-3 py-2 text-sm"
-                      style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}
-                    >
+                      style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}>
                       {locations.map(l => <option key={l} value={l}>{l}</option>)}
                       {locations.length === 0 && <option value="בית">בית</option>}
                       <option value="__custom__">אחר...</option>
                     </select>
                     {location === '__custom__' && (
-                      <input
-                        autoFocus
-                        value={customLocation}
-                        onChange={e => setCustomLocation(e.target.value)}
-                        placeholder="הזן מיקום..."
-                        className="w-full px-3 py-2 text-sm mt-1"
-                        style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }}
-                      />
+                      <input autoFocus value={customLocation} onChange={e => setCustomLocation(e.target.value)}
+                        placeholder="הזן מיקום..." className="w-full px-3 py-2 text-sm mt-1"
+                        style={{ background: '#2d2547', color: '#f5e6cc', border: '1px solid rgba(180,130,30,0.3)' }} />
                     )}
                   </div>
                 </div>
@@ -332,15 +347,15 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                   style={{
                     border: `2px dashed ${dragging ? '#d97706' : 'rgba(180,130,30,0.4)'}`,
                     background: dragging ? 'rgba(180,130,30,0.08)' : 'rgba(255,255,255,0.03)',
-                    minHeight: imagePreview ? 'auto' : 200,
-                    padding: 20,
+                    minHeight: imagePreview ? 'auto' : 200, padding: 20,
                   }}
                   onDragOver={e => { e.preventDefault(); setDragging(true); }}
                   onDragLeave={() => setDragging(false)}
                   onDrop={handleDrop}
                   onClick={() => fileRef.current?.click()}
                 >
-                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => loadFile(e.target.files[0])} />
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden"
+                    onChange={e => loadFile(e.target.files[0])} />
                   {imagePreview ? (
                     <img src={imagePreview} alt="preview" className="max-h-64 object-contain w-full" />
                   ) : (
@@ -355,18 +370,17 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                 </div>
 
                 {imagePreview && phase !== 'scanning' && (
-                  <button
-                    onClick={handleScan}
+                  <button onClick={handleScan}
                     className="w-full py-3 font-semibold text-sm transition-all"
-                    style={{ background: 'linear-gradient(135deg, #d97706, #b45309)', color: '#fffef8' }}
-                  >
+                    style={{ background: 'linear-gradient(135deg, #d97706, #b45309)', color: '#fffef8' }}>
                     🔍 זהה ספרים
                   </button>
                 )}
 
                 {phase === 'scanning' && (
                   <div className="flex flex-col items-center gap-3 py-6">
-                    <div className="w-8 h-8 border-4 rounded-full animate-spin" style={{ borderColor: '#d97706', borderTopColor: 'transparent' }} />
+                    <div className="w-8 h-8 border-4 rounded-full animate-spin"
+                      style={{ borderColor: '#d97706', borderTopColor: 'transparent' }} />
                     <p className="text-sm font-medium" style={{ color: '#f5e6cc' }}>מנתח את התמונה...</p>
                     <p className="text-xs" style={{ color: '#6b7280' }}>בינה מלאכותית קוראת את שמות הספרים</p>
                   </div>
@@ -378,44 +392,53 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
 
             {/* ── RESULTS PHASE ── */}
             {phase === 'results' && (
-              <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-4">
 
                 {/* Summary */}
-                <div dir="rtl" className="flex flex-col gap-1">
-                  <p className="text-sm font-medium" style={{ color: '#f5e6cc' }}>
-                    זוהו <strong>{results.length}</strong> ספרים
-                    {enrichingCount === 0 && withMatch.length > 0 && <> — נמצאו התאמות לקטלוג עבור <strong>{withMatch.length}</strong></>}
-                    {enrichingCount > 0 && <span style={{ color: '#6b7280' }}> — מחפש בקטלוג...</span>}
-                  </p>
-                  <div className="flex items-center gap-3 text-xs" style={{ color: '#6b7280' }}>
-                    <span><span style={{ color: CONF_COLOR.high }}>●</span> ברור</span>
-                    <span><span style={{ color: CONF_COLOR.medium }}>●</span> חלקי</span>
-                    <span><span style={{ color: CONF_COLOR.low }}>●</span> לא בטוח</span>
+                <div dir="rtl" className="flex items-center justify-between">
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-sm font-medium" style={{ color: '#f5e6cc' }}>
+                      זוהו <strong>{results.length}</strong> ספרים
+                      {enrichingCount === 0 && withMatch.length > 0 &&
+                        <> — <strong>{withMatch.length}</strong> נמצאו בקטלוג</>}
+                      {enrichingCount > 0 &&
+                        <span style={{ color: '#6b7280' }}> — מחפש בקטלוג ({enrichingCount})...</span>}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs" style={{ color: '#6b7280' }}>
+                      <span><span style={{ color: CONF_COLOR.high }}>●</span> ברור</span>
+                      <span><span style={{ color: CONF_COLOR.medium }}>●</span> חלקי</span>
+                      <span><span style={{ color: CONF_COLOR.low }}>●</span> לא בטוח</span>
+                    </div>
                   </div>
+                  <button
+                    className="text-xs underline flex-shrink-0"
+                    style={{ color: '#6b7280' }}
+                    onClick={() => {
+                      const allSelected = results.every((_, i) => selected[i] != null);
+                      if (allSelected) {
+                        setSelected({});
+                      } else {
+                        const s = {};
+                        results.forEach((r, i) => {
+                          s[i] = (r.matches.length > 0 && (r.matches[0]?.matchScore ?? 0) >= 100)
+                            ? 'catalog' : 'gemini';
+                        });
+                        setSelected(s);
+                      }
+                    }}
+                  >
+                    {results.every((_, i) => selected[i] != null) ? 'בטל הכל' : 'בחר הכל'}
+                  </button>
                 </div>
 
-                {/* Unified book list */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-end" dir="rtl">
-                    <button
-                      className="text-xs underline"
-                      style={{ color: '#6b7280' }}
-                      onClick={() => {
-                        const allOn = results.every((_, i) => selected[i]);
-                        const s = {};
-                        results.forEach((_, i) => { s[i] = !allOn; });
-                        setSelected(s);
-                      }}
-                    >
-                      {results.every((_, i) => selected[i]) ? 'בטל הכל' : 'בחר הכל'}
-                    </button>
-                  </div>
+                {/* Book list */}
+                <div className="flex flex-col gap-3">
                   {results.map((item, i) => (
                     <BookResultRow
                       key={i}
                       item={item}
-                      selected={!!selected[i]}
-                      onToggle={() => setSelected(s => ({ ...s, [i]: !s[i] }))}
+                      source={selected[i] ?? null}
+                      onSourceChange={src => setSelected(s => ({ ...s, [i]: src }))}
                       selectedMatch={matchOverride[i]}
                       onMatchChange={m => setMatchOverride(o => ({ ...o, [i]: m }))}
                     />
@@ -443,8 +466,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                 onClick={handleAdd}
                 disabled={adding || selectedCount === 0}
                 className="w-full py-3 font-semibold text-sm transition-all disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #d97706, #b45309)', color: '#fffef8' }}
-              >
+                style={{ background: 'linear-gradient(135deg, #d97706, #b45309)', color: '#fffef8' }}>
                 {adding ? 'מוסיף...' : `הוסף ${selectedCount} ספרים`}
               </button>
             </div>

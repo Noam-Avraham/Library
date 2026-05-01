@@ -612,7 +612,7 @@ app.post('/api/scan-enrich', async (req, res) => {
       .map(b => ({ ...b, _score: scoreResult(b, title) }))
       .sort((a, b) => b._score - a._score)
       .slice(0, 5)
-      .map(({ _score, ...b }) => b);
+      .map(({ _score, ...b }) => ({ ...b, matchScore: _score }));
     res.json(matches);
   } catch (err) {
     res.status(500).json({ error: err.message });
