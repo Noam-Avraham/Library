@@ -530,6 +530,18 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                   </div>
                 </div>
 
+                {/* Instructions */}
+                <div className="flex flex-col gap-1 px-1 py-2" dir="rtl"
+                  style={{ background: 'rgba(255,255,255,0.03)', borderRight: '2px solid rgba(180,130,30,0.3)' }}>
+                  <p className="text-xs" style={{ color: '#9ca3af' }}>
+                    <span style={{ color: '#d97706' }}>ימין</span> — מה זוהה בתמונה ·
+                    <span style={{ color: '#d97706' }}> שמאל</span> — הספר שנמצא במאגר
+                  </p>
+                  <p className="text-xs" style={{ color: '#6b7280' }}>
+                    ✏️ ערוך כותרת או מחבר ולחץ <strong style={{ color: '#9ca3af' }}>עדכן</strong> לחיפוש מחדש · ✕ הסר זיהוי שגוי
+                  </p>
+                </div>
+
                 {/* Column headers */}
                 <div className="flex gap-1 px-1" dir="rtl">
                   <p className="flex-1 text-xs font-semibold text-center" style={{ color: '#6b7280' }}>זוהה בתמונה</p>
