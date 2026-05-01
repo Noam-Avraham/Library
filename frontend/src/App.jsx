@@ -129,10 +129,7 @@ activeTab={activeTab}
           onChange={handleFilterChange}
           onReset={() => setFilters(INITIAL_FILTERS)}
           viewMode={viewMode}
-          onViewChange={mode => {
-            setViewMode(mode);
-            if (mode === 'grid' && sortBy === 'location') setSortBy('title-az');
-          }}
+          onViewChange={setViewMode}
           sortBy={sortBy}
           onSortChange={setSortBy}
         />
