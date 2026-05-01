@@ -24,6 +24,14 @@ const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes';
 const NLI_API          = 'https://api.nli.org.il/openlibrary/search';
 const NLI_HEADERS      = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' };
 
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+// Strip newlines so user-supplied text cannot inject new prompt instructions
+function sp(value, maxLen = 200) {
+  if (!value) return '';
+  return String(value).replace(/[\r\n]+/g, ' ').trim().slice(0, maxLen);
+}
+
 // ── NLI helpers ──────────────────────────────────────────────────────────────
 const dc = (rec, field) => rec[`http://purl.org/dc/elements/1.1/${field}`]?.[0]?.['@value'] || '';
 
@@ -370,7 +378,7 @@ app.get('/api/next-book', async (req, res) => {
     return res.json({ recommendations: [], reason: 'no_ratings' });
 
   const readList = readBooks.map(b =>
-    `- "${b.title}"${b.author ? ` / ${b.author}` : ''}${b.genre ? ` [${b.genre}]` : ''}${b.rating ? ` — ${b.rating}/5` : ''}${b.review_text ? `: "${b.review_text}"` : ''}`
+    `- "${sp(b.title)}"${b.author ? ` / ${sp(b.author)}` : ''}${b.genre ? ` [${sp(b.genre)}]` : ''}${b.rating ? ` — ${b.rating}/5` : ''}${b.review_text ? `: "${sp(b.review_text)}"` : ''}`
   ).join('\n');
 
   const client = new Anthropic({ apiKey });
@@ -451,7 +459,7 @@ Rules:
     return res.json({ recommendations: [], reason: 'all_read' });
 
   const unreadList = unreadBooks.map((b, i) =>
-    `${i}: "${b.title}"${b.author ? ` / ${b.author}` : ''}${b.genre ? ` [${b.genre}]` : ''}`
+    `${i}: "${sp(b.title)}"${b.author ? ` / ${sp(b.author)}` : ''}${b.genre ? ` [${sp(b.genre)}]` : ''}`
   ).join('\n');
 
   try {
@@ -490,8 +498,9 @@ Pick the best matches based on genres, authors, themes, and their ratings/review
 
 // ── Shelf Photo Scanner ──────────────────────────────────────────────────────
 app.post('/api/scan-shelf', async (req, res) => {
-  const { imageBase64, mediaType = 'image/jpeg' } = req.body;
+  const { imageBase64, mediaType = 'image/jpeg', hint } = req.body;
   if (!imageBase64) return res.status(400).json({ error: 'imageBase64 required' });
+  if (!ALLOWED_IMAGE_TYPES.has(mediaType)) return res.status(400).json({ error: 'סוג קובץ לא נתמך' });
   if (imageBase64.length > 15_000_000) return res.status(400).json({ error: 'התמונה גדולה מדי — מקסימום 20MB' });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -499,15 +508,16 @@ app.post('/api/scan-shelf', async (req, res) => {
 
   const client = new Anthropic({ apiKey });
 
-  // Step 1: Ask Claude to identify every book spine in the photo
+  // Step 1: Ask Claude to identify book spines — conservative mode
   let identified = [];
   try {
+    const hintLine = hint ? `\nThe user estimates there are approximately ${hint} books in this photo — use this as a rough guide only.` : '';
     const message = await client.messages.create({
       model: 'claude-opus-4-7',
       max_tokens: 4096,
       tools: [{
         name: 'report_books',
-        description: 'Report all books identified on the shelf',
+        description: 'Report books identified on the shelf with confidence level',
         input_schema: {
           type: 'object',
           properties: {
@@ -516,10 +526,12 @@ app.post('/api/scan-shelf', async (req, res) => {
               items: {
                 type: 'object',
                 properties: {
-                  title:  { type: 'string', description: 'Book title as it appears on the spine' },
-                  author: { type: 'string', description: 'Author name, or empty string if not visible' },
+                  title:      { type: 'string', description: 'Book title exactly as printed on the spine' },
+                  author:     { type: 'string', description: 'Author name as printed, or empty string if not visible' },
+                  language:   { type: 'string', enum: ['he', 'en', 'other'], description: 'Primary language of the spine text' },
+                  confidence: { type: 'string', enum: ['high', 'medium', 'low'], description: 'How clearly you could read this spine' },
                 },
-                required: ['title', 'author'],
+                required: ['title', 'author', 'language', 'confidence'],
               },
             },
           },
@@ -536,20 +548,27 @@ app.post('/api/scan-shelf', async (req, res) => {
           },
           {
             type: 'text',
-            text: `You are an expert librarian and OCR specialist analyzing a photo of a bookshelf.
+            text: `You are an expert librarian and OCR specialist analyzing a photo of a bookshelf.${hintLine}
 
-Your task: identify EVERY book spine visible in the image and extract the title and author.
+Your task: read the book spines visible in the image and extract title, author, language, and your confidence level.
 
-Instructions:
-- Scan left-to-right, top-to-bottom across ALL shelves in the image
-- Book spines are usually vertical — tilt your reading mentally to read rotated text
-- Hebrew text reads right-to-left; English text reads left-to-right
-- For Hebrew books: the title is usually larger, the author below or above it
-- Include books that are partially visible or have faded text — give your best reading
-- If you can only read the title but not the author, include the book with an empty author
-- Do NOT skip books just because the text is small or the angle is awkward
-- Report the text exactly as printed — do not translate or correct spelling
-- If a spine has both Hebrew and English text, prefer the Hebrew title`,
+CRITICAL — quality over quantity:
+- Only report a book if you can read the title with reasonable clarity
+- It is far better to return fewer books than to return wrong titles
+- If a spine is too blurry, too angled, or too obscured — skip it entirely
+- Do NOT guess or invent titles you cannot actually read
+
+Reading instructions:
+- Book spines are vertical — tilt your reading mentally
+- Hebrew (עברית): reads right-to-left; title is usually the larger text, author below or above
+- English: reads left-to-right; standard title/author layout
+- If a spine has both Hebrew and English text, use the Hebrew as the title
+- Report text exactly as printed — do not translate or correct spelling
+
+Confidence guide:
+- high: you can clearly read the full title
+- medium: you can read most of the title but some letters are unclear
+- low: you can make out partial text but are uncertain — still report it so the user can verify`,
           },
         ],
       }],
@@ -561,9 +580,9 @@ Instructions:
     return res.status(500).json({ error: `Claude error: ${err.message}` });
   }
 
-  // Step 2: Search NLI + Google for each identified book
+  // Step 2: Search NLI + Google for each identified book — all results returned, even empty matches
   const results = await Promise.all(
-    identified.map(async ({ title, author }) => {
+    identified.map(async ({ title, author, language, confidence }) => {
       const query = [title, author].filter(Boolean).join(' ');
       try {
         const [nliRes, googleRes] = await Promise.allSettled([fetchNLI(query), fetchGoogle(query)]);
@@ -571,15 +590,15 @@ Instructions:
         const googleBooks = googleRes.status === 'fulfilled' ? googleRes.value : [];
         const merged      = mergeNLIAndGoogle(nliBooks, googleBooks);
 
-        const scored = merged
+        const matches = merged
           .map(b => ({ ...b, _score: scoreResult(b, title) }))
           .sort((a, b) => b._score - a._score)
           .slice(0, 5)
           .map(({ _score, ...b }) => b);
 
-        return { identified: { title, author }, matches: scored };
+        return { identified: { title, author, language, confidence }, matches };
       } catch {
-        return { identified: { title, author }, matches: [] };
+        return { identified: { title, author, language, confidence }, matches: [] };
       }
     })
   );

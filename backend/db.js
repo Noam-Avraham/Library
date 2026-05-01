@@ -107,12 +107,8 @@ async function init() {
   _db.run('CREATE INDEX IF NOT EXISTS idx_books_owner       ON books(owner)');
   _db.run('CREATE INDEX IF NOT EXISTS idx_books_location    ON books(location)');
 
-  // Seed from family.config.json
-  const NEW_MEMBERS = familyConfig.owners.map(o => o.name);
-  const memberCount = get('SELECT COUNT(*) as c FROM family_members');
-  if (!memberCount?.c) {
-    NEW_MEMBERS.forEach(name => _db.run('INSERT OR IGNORE INTO family_members (name) VALUES (?)', [name]));
-  }
+  // Sync family members from family.config.json on every startup — adds new names, never deletes
+  familyConfig.owners.forEach(o => _db.run('INSERT OR IGNORE INTO family_members (name) VALUES (?)', [o.name]));
 
   save();
   console.log('✅ Database ready:', DB_PATH);

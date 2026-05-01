@@ -12,8 +12,10 @@ A full-stack web app for managing a family book collection — track ownership, 
 | **Grid view** | Cover-art grid with hover actions |
 | **Book search** | Searches Google Books + Israeli National Library simultaneously |
 | **Shelf scanner** | Upload a photo of a bookshelf — AI identifies the books automatically |
-| **Loans** | Transfer books between family members, track current holder |
+| **Loans** | Transfer books between family members; active loans list shows borrower and days elapsed |
+| **Wishlist** | Books with "wishlist" status get their own shelf and can't be assigned a location |
 | **Reviews** | Each person can mark a book as read, rate 1–5 stars, and write a review |
+| **Translator field** | Books can store a translator name alongside author |
 | **Wrong-location indicator** | Orange stripe on a book's spine when it's not at the owner's home |
 | **Statistics** | Charts for collection breakdown by owner, genre, status |
 
@@ -92,7 +94,7 @@ ANTHROPIC_API_KEY=your_key_here
 
 - **Google Books** — free key from [console.cloud.google.com](https://console.cloud.google.com)
 - **NLI** (Israeli National Library) — improves Hebrew book search
-- **Anthropic** — required only for the shelf photo scanner feature
+- **Anthropic** — required for the shelf scanner and AI book recommendations
 
 The app works without any keys (uses unauthenticated Google Books quota).
 
@@ -140,8 +142,12 @@ AvrahamLibrary/
 
 ## 🔧 Customisation Tips
 
-**Add more owners**
-Add a new entry to `owners` in `family.config.json`. The backend will seed the new name into the database on next restart.
+**Add or remove family members on a running library**
+Run the interactive management script on the server:
+```bash
+node backend/manage-family.js
+```
+It lists current members, lets you add or remove by name, and writes directly to `library.db`. No restart needed.
 
 **Add more reviewers**
 Add a new entry to `reviewers`. Pick a unique color from the palette above.
@@ -151,6 +157,42 @@ UI text strings are in the component files. The app is currently in Hebrew (RTL)
 
 **Change the shelf plank color**
 Edit the `background` in `BookshelfView.jsx` → `ShelfRow` → the `Wooden plank` div.
+
+---
+
+## 🤖 AI Features
+
+The app uses the Anthropic Claude API for two features. Claude has no access to the server, database, or any files — it only receives the specific data sent to it in each request.
+
+### Book Recommendations (`/api/next-book`)
+
+Two modes, same endpoint:
+
+| | Library mode | External mode |
+|---|---|---|
+| **Claude receives** | Reading history (titles, authors, genres, ratings, reviews) + numbered list of unread books in the library | Reading history only |
+| **Claude returns** | Index numbers pointing into the unread list | New book suggestions (title, author, reason in Hebrew) |
+| **Book data source** | Always from the database — never from Claude's response | Verified via Google Books + NLI APIs |
+
+### Shelf Scanner (`/api/scan-shelf`)
+
+| | |
+|---|---|
+| **Claude receives** | The photo (as base64) + hardcoded instruction text + optional book count hint |
+| **Claude returns** | A structured list of `{ title, author, language, confidence }` pairs via a forced tool call |
+
+Results are split into two groups: books matched in the catalog (NLI + Google Books) and books Claude identified but couldn't match. Both groups can be added to the library. Confidence level (high / medium / low) is shown per book so the user can spot uncertain reads at a glance.
+
+The AI prompt is versioned in `backend/scanner-prompt-versions.md` to track improvements over time.
+
+### Security
+
+| Threat | Protection |
+|---|---|
+| **Prompt injection via book data** | All DB fields (title, author, genre, review text) are sanitized before entering the prompt: newlines stripped, length capped at 200 chars |
+| **Library-mode injection** | Claude only returns an index number, not book details. The actual book always comes from the DB. A bounds check rejects any out-of-range index. |
+| **Malicious `mediaType`** | Validated against a whitelist (`image/jpeg`, `image/png`, `image/gif`, `image/webp`) — anything else is rejected with 400 |
+| **SQL injection** | All database queries use parameterized statements (`?` placeholders) — user input is never interpreted as SQL |
 
 ---
 

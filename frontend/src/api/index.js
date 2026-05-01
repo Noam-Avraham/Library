@@ -31,8 +31,8 @@ export const api = {
   getStats: () => request('/stats'),
 
   // Shelf scanner
-  scanShelf: (imageBase64, mediaType) =>
-    request('/scan-shelf', { method: 'POST', body: JSON.stringify({ imageBase64, mediaType }) }),
+  scanShelf: (imageBase64, mediaType, hint) =>
+    request('/scan-shelf', { method: 'POST', body: JSON.stringify({ imageBase64, mediaType, hint }) }),
 
   // Reviews
   getReviews: (bookId) => request(`/reviews?book_id=${bookId}`),
