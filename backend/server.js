@@ -173,30 +173,28 @@ function scoreResult(book, query, author = '') {
   const q     = query.toLowerCase();
   const title = (book.title || '').toLowerCase();
 
-  // Title match
+  // ── Primary: title match (determines quality tier) ────────────────────────
   if (title === q)              score += 100;
   else if (title.startsWith(q)) score += 70;
   else if (title.includes(q))   score += 40;
 
-  // Author match (helps rank when title search returns multiple results)
+  // ── Secondary: author match (meaningful ranking signal) ───────────────────
   if (author) {
     const a  = author.toLowerCase();
     const ba = (book.author || '').toLowerCase();
-    if (ba === a)                           score += 20;
-    else if (ba.includes(a) || a.includes(ba)) score += 10;
+    if (ba === a)                              score += 25;
+    else if (ba.includes(a) || a.includes(ba)) score += 12;
   }
 
-  // Language match
+  // ── Tiebreaker: metadata (max ~11pts — cannot shift quality tier) ─────────
   const hebrewQuery = isHebrew(query);
-  if (hebrewQuery  && book.language === 'heb') score += 25;
-  if (!hebrewQuery && book.language === 'eng') score += 15;
-
-  // Data completeness
-  if (book.thumbnailUrl) score += 15;
-  if (book.author)       score += 10;
-  if (book.isbn)         score +=  5;
-  if (book.translator)   score +=  5;
-  if (book.publishedDate) score += 3;
+  if (hebrewQuery  && book.language === 'heb') score += 4;
+  if (!hebrewQuery && book.language === 'eng') score += 4;
+  if (book.thumbnailUrl)  score += 2;
+  if (book.isbn)          score += 2;
+  if (book.author)        score += 1;
+  if (book.translator)    score += 1;
+  if (book.publishedDate) score += 1;
 
   return score;
 }
@@ -599,8 +597,7 @@ Rules:
 - confidence: high=fully clear, medium=most of the title is clear, low=partial or uncertain
 - Report every book even if partial, angled, or at the edge — use low confidence for those
 - Hebrew text reads right to left
-- Do not translate or correct spelling errors
-- Prefer reporting too many books over missing any`,
+- Do not translate or correct spelling errors`,
     ]);
     const raw = result.response.text().trim().replace(/^```json\s*/i, '').replace(/```$/, '').trim();
     res.json(JSON.parse(raw).books ?? []);
