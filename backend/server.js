@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const rateLimit = require('express-rate-limit');
 const { init, run, get, all } = require('./db');
 
@@ -503,81 +504,36 @@ app.post('/api/scan-shelf', async (req, res) => {
   if (!ALLOWED_IMAGE_TYPES.has(mediaType)) return res.status(400).json({ error: 'סוג קובץ לא נתמך' });
   if (imageBase64.length > 15_000_000) return res.status(400).json({ error: 'התמונה גדולה מדי — מקסימום 20MB' });
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
 
-  const client = new Anthropic({ apiKey });
-
-  // Step 1: Ask Claude to identify book spines — conservative mode
+  // Step 1: Gemini identifies all book spines
   let identified = [];
   try {
-    const hintLine = hint ? `\nThe user estimates there are approximately ${hint} books in this photo — use this as a rough guide only.` : '';
-    const message = await client.messages.create({
-      model: 'claude-opus-4-7',
-      max_tokens: 4096,
-      tools: [{
-        name: 'report_books',
-        description: 'Report books identified on the shelf with confidence level',
-        input_schema: {
-          type: 'object',
-          properties: {
-            books: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title:      { type: 'string', description: 'Book title exactly as printed on the spine' },
-                  author:     { type: 'string', description: 'Author name as printed, or empty string if not visible' },
-                  language:   { type: 'string', enum: ['he', 'en', 'other'], description: 'Primary language of the spine text' },
-                  confidence: { type: 'string', enum: ['high', 'medium', 'low'], description: 'How clearly you could read this spine' },
-                },
-                required: ['title', 'author', 'language', 'confidence'],
-              },
-            },
-          },
-          required: ['books'],
-        },
-      }],
-      tool_choice: { type: 'tool', name: 'report_books' },
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: mediaType, data: imageBase64 },
-          },
-          {
-            type: 'text',
-            text: `You are an expert librarian and OCR specialist analyzing a photo of a bookshelf.${hintLine}
+    const hintLine = hint ? ` יש בתמונה ${hint} ספרים — מצא את כולם.` : '';
+    const genAI = new GoogleGenerativeAI(geminiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-Your task: read the book spines visible in the image and extract title, author, language, and your confidence level.
+    const result = await model.generateContent([
+      { inlineData: { mimeType: mediaType, data: imageBase64 } },
+      `זהה את כל הספרים הנראים בתמונה זו של מדף ספרים.${hintLine}
+החזר JSON בלבד (ללא markdown, ללא הסברים) עם מבנה זה:
+{"books":[{"title":"...","author":"...","language":"he|en|other","confidence":"high|medium|low"}]}
 
-CRITICAL — quality over quantity:
-- Only report a book if you can read the title with reasonable clarity
-- It is far better to return fewer books than to return wrong titles
-- If a spine is too blurry, too angled, or too obscured — skip it entirely
-- Do NOT guess or invent titles you cannot actually read
+כללים:
+- title: הכותרת בדיוק כפי שמודפסת על העמוד
+- author: שם המחבר, או מחרוזת ריקה אם לא נראה
+- language: שפת הטקסט העיקרית על העמוד
+- confidence: high=ברור לחלוטין, medium=רוב הכותרת ברורה, low=חלקי או מעורפל
+- דווח על כל ספר גם אם הוא חלקי, בזווית, או בקצה התמונה
+- טקסט עברי נקרא מימין לשמאל
+- אל תתרגם ואל תתקן שגיאות כתיב`,
+    ]);
 
-Reading instructions:
-- Book spines are vertical — tilt your reading mentally
-- Hebrew (עברית): reads right-to-left; title is usually the larger text, author below or above
-- English: reads left-to-right; standard title/author layout
-- If a spine has both Hebrew and English text, use the Hebrew as the title
-- Report text exactly as printed — do not translate or correct spelling
-
-Confidence guide:
-- high: you can clearly read the full title
-- medium: you can read most of the title but some letters are unclear
-- low: you can make out partial text but are uncertain — still report it so the user can verify`,
-          },
-        ],
-      }],
-    });
-
-    const toolUse = message.content.find(b => b.type === 'tool_use');
-    identified = toolUse?.input?.books ?? [];
+    const raw = result.response.text().trim().replace(/^```json\s*/i, '').replace(/```$/, '').trim();
+    identified = JSON.parse(raw).books ?? [];
   } catch (err) {
-    return res.status(500).json({ error: `Claude error: ${err.message}` });
+    return res.status(500).json({ error: `Gemini error: ${err.message}` });
   }
 
   // Step 2: Search NLI + Google for each identified book — all results returned, even empty matches

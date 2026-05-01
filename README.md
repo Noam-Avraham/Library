@@ -90,11 +90,13 @@ Create `backend/.env` for enhanced book search:
 GOOGLE_BOOKS_API_KEY=your_key_here
 NLI_API_KEY=your_key_here
 ANTHROPIC_API_KEY=your_key_here
+GEMINI_API_KEY=your_key_here
 ```
 
 - **Google Books** — free key from [console.cloud.google.com](https://console.cloud.google.com)
 - **NLI** (Israeli National Library) — improves Hebrew book search
-- **Anthropic** — required for the shelf scanner and AI book recommendations
+- **Anthropic** — required for AI book recommendations
+- **Gemini** — required for the shelf scanner (Google AI Studio or Google Cloud Console)
 
 The app works without any keys (uses unauthenticated Google Books quota).
 
@@ -178,8 +180,8 @@ Two modes, same endpoint:
 
 | | |
 |---|---|
-| **Claude receives** | The photo (as base64) + hardcoded instruction text + optional book count hint |
-| **Claude returns** | A structured list of `{ title, author, language, confidence }` pairs via a forced tool call |
+| **Gemini receives** | The photo (as base64) + Hebrew instruction prompt + optional book count hint |
+| **Gemini returns** | A JSON list of `{ title, author, language, confidence }` pairs |
 
 Results are split into two groups: books matched in the catalog (NLI + Google Books) and books Claude identified but couldn't match. Both groups can be added to the library. Confidence level (high / medium / low) is shown per book so the user can spot uncertain reads at a glance.
 
@@ -204,7 +206,8 @@ The AI prompt is versioned in `backend/scanner-prompt-versions.md` to track impr
 | Backend | Node.js, Express |
 | Database | SQLite via sql.js (no installation needed) |
 | Book search | Google Books API + Israeli National Library API |
-| AI scanner | Anthropic Claude (vision) |
+| AI scanner | Google Gemini 2.5 Flash (vision) |
+| AI recommendations | Anthropic Claude |
 
 ---
 
