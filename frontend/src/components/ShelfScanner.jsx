@@ -51,7 +51,7 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
 
       {/* ── Gemini panel ── */}
       <div
-        className="flex-1 flex gap-1.5 p-2 sm:p-3 cursor-pointer transition-all"
+        className="flex-1 min-w-0 flex gap-1.5 p-2 sm:p-3 cursor-pointer transition-all"
         style={{
           background: geminiSelected ? 'rgba(180,130,30,0.15)' : 'rgba(255,255,255,0.04)',
           border: `2px solid ${geminiSelected ? '#d97706' : 'rgba(255,255,255,0.08)'}`,
@@ -97,7 +97,7 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
 
       {/* ── Catalog panel ── */}
       <div
-        className={`flex-1 flex gap-1.5 p-2 sm:p-3 transition-all ${hasMatch ? 'cursor-pointer' : 'cursor-default'}`}
+        className={`flex-1 min-w-0 flex gap-1.5 p-2 sm:p-3 transition-all ${hasMatch ? 'cursor-pointer' : 'cursor-default'}`}
         style={{
           background: catalogSelected ? 'rgba(180,130,30,0.15)' : 'rgba(255,255,255,0.04)',
           border: `2px solid ${catalogSelected ? '#d97706' : 'rgba(255,255,255,0.08)'}`,

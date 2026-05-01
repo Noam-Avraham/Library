@@ -176,14 +176,25 @@ Two modes, same endpoint:
 | **Claude returns** | Index numbers pointing into the unread list | New book suggestions (title, author, reason in Hebrew) |
 | **Book data source** | Always from the database — never from Claude's response | Verified via Google Books + NLI APIs |
 
-### Shelf Scanner (`/api/scan-shelf`)
+### Shelf Scanner — two-phase flow
+
+**Phase 1 — Identify (`/api/scan-identify`):**
 
 | | |
 |---|---|
-| **Gemini receives** | The photo (as base64) + Hebrew instruction prompt + optional book count hint |
-| **Gemini returns** | A JSON list of `{ title, author, language, confidence }` pairs |
+| **Gemini receives** | The photo (as base64) + English instruction prompt |
+| **Gemini returns** | A JSON list of `{ title, author, language, confidence }` pairs — immediately |
 
-Results are split into two groups: books matched in the catalog (NLI + Google Books) and books Claude identified but couldn't match. Both groups can be added to the library. Confidence level (high / medium / low) is shown per book so the user can spot uncertain reads at a glance.
+**Phase 2 — Enrich (`/api/scan-enrich`, called per book in background):**
+
+| | |
+|---|---|
+| **Input** | `{ title, author }` for one book |
+| **Searches** | NLI + Google Books **by title only** (author name transliterations cause false negatives in queries) |
+| **Scores** | `scoreResult()`: title match primary (exact=100/startsWith=70/includes=40), author secondary (+25/+12), metadata capped as tiebreaker (~11pts max) |
+| **Returns** | Top 5 catalog matches with `matchScore`, thumbnail, ISBN, and `source` label |
+
+The UI shows two side-by-side panels per book: what Gemini read (📷) and the best catalog match (📚). The user can edit an identified title or author and press **עדכן** to re-search, or press ✕ to dismiss a wrong identification. Confidence level (high / medium / low) is shown per Gemini identification.
 
 The AI prompt is versioned in `backend/scanner-prompt-versions.md` to track improvements over time.
 
