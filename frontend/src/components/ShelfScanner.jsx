@@ -37,7 +37,7 @@ function RadioDot({ active }) {
 }
 
 // source: 'gemini' | 'catalog' | null
-function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchChange }) {
+function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchChange, editMode, editedTitle, onTitleChange }) {
   const { identified, matches, enriching, isDuplicate } = item;
   const best     = selectedMatch ?? matches[0];
   const hasMatch = matches.length > 0;
@@ -62,8 +62,18 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
         <div className="flex-1 min-w-0" dir="rtl">
           <div className="flex items-center gap-1.5">
             <ConfidenceDot confidence={identified.confidence} />
-            <p className="text-xs sm:text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{identified.title}</p>
-            {identified.language === 'en' && (
+            {editMode ? (
+              <input
+                className="text-xs sm:text-sm font-semibold flex-1 min-w-0"
+                style={{ color: '#f5e6cc', background: 'transparent', borderBottom: '1px solid #d97706', outline: 'none' }}
+                value={editedTitle ?? identified.title}
+                onChange={e => onTitleChange(e.target.value)}
+                onClick={e => e.stopPropagation()}
+              />
+            ) : (
+              <p className="text-xs sm:text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{identified.title}</p>
+            )}
+            {identified.language === 'en' && !editMode && (
               <span className="text-xs px-1 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>EN</span>
             )}
           </div>
@@ -150,12 +160,15 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
   const [adding, setAdding]             = useState(false);
   const [error, setError]               = useState('');
   const [dragging, setDragging]         = useState(false);
+  const [editMode, setEditMode]         = useState(false);
+  const [editedTitles, setEditedTitles] = useState({});
   const fileRef = useRef();
 
   const reset = () => {
     setPhase('upload'); setImagePreview(null); setImageBase64(null);
     setResults([]); setSelected({}); setMatchOverride({});
     setError(''); setAdding(false); setCustomLocation('');
+    setEditMode(false); setEditedTitles({});
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -269,6 +282,40 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
       setError(err.message);
     } finally {
       setAdding(false);
+    }
+  };
+
+  const handleUpdateTitles = async () => {
+    const existingTitles = new Set(books.map(b => b.title.trim().toLowerCase()));
+    const changed = Object.entries(editedTitles)
+      .map(([i, t]) => ({ i: Number(i), newTitle: t.trim(), author: results[Number(i)].identified.author }))
+      .filter(({ i, newTitle }) => newTitle && newTitle !== results[i].identified.title);
+
+    setEditMode(false);
+    setEditedTitles({});
+    if (!changed.length) return;
+
+    // Update titles and mark as enriching
+    setResults(prev => prev.map((r, i) => {
+      const c = changed.find(x => x.i === i);
+      if (!c) return r;
+      return { ...r, identified: { ...r.identified, title: c.newTitle }, matches: [], enriching: true };
+    }));
+
+    // Re-enrich changed books
+    for (const { i, newTitle, author } of changed) {
+      try {
+        const matches = await api.scanEnrich(newTitle, author);
+        const bestScore = matches[0]?.matchScore ?? 0;
+        const isDuplicate = {
+          gemini:  existingTitles.has(newTitle.toLowerCase()),
+          catalog: matches.length > 0 && existingTitles.has((matches[0]?.title ?? '').trim().toLowerCase()),
+        };
+        setResults(prev => prev.map((r, ri) => ri !== i ? r : { ...r, matches, enriching: false, isDuplicate }));
+        if (bestScore >= 100) setSelected(prev => ({ ...prev, [i]: 'catalog' }));
+      } catch {
+        setResults(prev => prev.map((r, ri) => ri !== i ? r : { ...r, enriching: false }));
+      }
     }
   };
 
@@ -408,25 +455,36 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                       <span><span style={{ color: CONF_COLOR.low }}>●</span> לא בטוח</span>
                     </div>
                   </div>
-                  <button
-                    className="text-xs underline flex-shrink-0"
-                    style={{ color: '#6b7280' }}
-                    onClick={() => {
-                      const allSelected = results.every((_, i) => selected[i] != null);
-                      if (allSelected) {
-                        setSelected({});
-                      } else {
-                        const s = {};
-                        results.forEach((r, i) => {
-                          s[i] = (r.matches.length > 0 && (r.matches[0]?.matchScore ?? 0) >= 100)
-                            ? 'catalog' : 'gemini';
-                        });
-                        setSelected(s);
-                      }
-                    }}
-                  >
-                    {results.every((_, i) => selected[i] != null) ? 'בטל הכל' : 'בחר הכל'}
-                  </button>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    {editMode ? (
+                      <>
+                        <button className="text-xs" style={{ color: '#6b7280' }}
+                          onClick={() => { setEditMode(false); setEditedTitles({}); }}>ביטול</button>
+                        <button className="text-xs font-semibold px-2 py-1"
+                          style={{ background: '#d97706', color: '#fffef8' }}
+                          onClick={handleUpdateTitles}>עדכן</button>
+                      </>
+                    ) : (
+                      <>
+                        <button className="text-xs underline" style={{ color: '#6b7280' }}
+                          onClick={() => {
+                            const allSelected = results.every((_, i) => selected[i] != null);
+                            if (allSelected) { setSelected({}); }
+                            else {
+                              const s = {};
+                              results.forEach((r, i) => {
+                                s[i] = (r.matches.length > 0 && (r.matches[0]?.matchScore ?? 0) >= 100) ? 'catalog' : 'gemini';
+                              });
+                              setSelected(s);
+                            }
+                          }}>
+                          {results.every((_, i) => selected[i] != null) ? 'בטל הכל' : 'בחר הכל'}
+                        </button>
+                        <button className="text-xs" style={{ color: '#6b7280' }}
+                          onClick={() => setEditMode(true)} title="ערוך כותרות">✏️</button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Column headers */}
@@ -445,6 +503,9 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                       onSourceChange={src => setSelected(s => ({ ...s, [i]: src }))}
                       selectedMatch={matchOverride[i]}
                       onMatchChange={m => setMatchOverride(o => ({ ...o, [i]: m }))}
+                      editMode={editMode}
+                      editedTitle={editedTitles[i]}
+                      onTitleChange={t => setEditedTitles(e => ({ ...e, [i]: t }))}
                     />
                   ))}
                 </div>
