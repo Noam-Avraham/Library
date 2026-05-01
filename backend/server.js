@@ -168,7 +168,7 @@ function mergeNLIAndGoogle(nliBooks, googleBooks) {
 // ── Ranking ──────────────────────────────────────────────────────────────────
 const isHebrew = s => /[\u0590-\u05FF]/.test(s);
 
-function scoreResult(book, query) {
+function scoreResult(book, query, author = '') {
   let score = 0;
   const q     = query.toLowerCase();
   const title = (book.title || '').toLowerCase();
@@ -177,6 +177,14 @@ function scoreResult(book, query) {
   if (title === q)              score += 100;
   else if (title.startsWith(q)) score += 70;
   else if (title.includes(q))   score += 40;
+
+  // Author match (helps rank when title search returns multiple results)
+  if (author) {
+    const a  = author.toLowerCase();
+    const ba = (book.author || '').toLowerCase();
+    if (ba === a)                           score += 20;
+    else if (ba.includes(a) || a.includes(ba)) score += 10;
+  }
 
   // Language match
   const hebrewQuery = isHebrew(query);
@@ -578,21 +586,21 @@ app.post('/api/scan-identify', async (req, res) => {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await model.generateContent([
       { inlineData: { mimeType: mediaType, data: imageBase64 } },
-      `סרוק את כל התמונה בקפידה והחזר רשימה של כל הספרים הנראים במדף.
-סרוק משמאל לימין ומלמעלה למטה — אל תפספס אף ספר, כולל ספרים בקצוות, בזוויות או חלקיים.
+      `Carefully scan the entire image and return a list of every book visible on the shelf.
+Scan left to right, top to bottom — do not miss any book, including those at the edges, at angles, or partially visible.
 
-החזר JSON בלבד (ללא markdown, ללא הסברים) עם מבנה זה:
+Return JSON only (no markdown, no explanation):
 {"books":[{"title":"...","author":"...","language":"he|en|other","confidence":"high|medium|low"}]}
 
-כללים:
-- title: הכותרת בדיוק כפי שמודפסת על העמוד
-- author: שם המחבר, או מחרוזת ריקה אם לא נראה
-- language: שפת הטקסט העיקרית על העמוד
-- confidence: high=ברור לחלוטין, medium=רוב הכותרת ברורה, low=חלקי או מעורפל
-- דווח על כל ספר גם אם הוא חלקי, בזווית, או בקצה התמונה — השתמש ב-low confidence
-- טקסט עברי נקרא מימין לשמאל
-- אל תתרגם ואל תתקן שגיאות כתיב
-- עדיף לדווח יותר מדי מאשר לפספס ספרים`,
+Rules:
+- title: the title exactly as printed on the spine
+- author: the author's name, or empty string if not visible
+- language: the main script/language on the spine (he/en/other)
+- confidence: high=fully clear, medium=most of the title is clear, low=partial or uncertain
+- Report every book even if partial, angled, or at the edge — use low confidence for those
+- Hebrew text reads right to left
+- Do not translate or correct spelling errors
+- Prefer reporting too many books over missing any`,
     ]);
     const raw = result.response.text().trim().replace(/^```json\s*/i, '').replace(/```$/, '').trim();
     res.json(JSON.parse(raw).books ?? []);
@@ -606,20 +614,16 @@ app.post('/api/scan-enrich', async (req, res) => {
   const { title, author } = req.body;
   if (!title) return res.status(400).json({ error: 'title required' });
 
-  const search = async (query) => {
-    const [nliRes, googleRes] = await Promise.allSettled([fetchNLI(query), fetchGoogle(query)]);
+  try {
+    // Search by title only — author names transliterate differently across sources
+    // and including them in the query causes false negatives. Author is used for ranking only.
+    const [nliRes, googleRes] = await Promise.allSettled([fetchNLI(title), fetchGoogle(title)]);
     const nliBooks    = nliRes.status    === 'fulfilled' ? nliRes.value    : [];
     const googleBooks = googleRes.status === 'fulfilled' ? googleRes.value : [];
-    return mergeNLIAndGoogle(nliBooks, googleBooks);
-  };
-
-  try {
-    let merged = await search([title, author].filter(Boolean).join(' '));
-    // Retry with title only if no results
-    if (merged.length === 0 && author) merged = await search(title);
+    const merged      = mergeNLIAndGoogle(nliBooks, googleBooks);
 
     const matches = merged
-      .map(b => ({ ...b, _score: scoreResult(b, title) }))
+      .map(b => ({ ...b, _score: scoreResult(b, title, author) }))
       .sort((a, b) => b._score - a._score)
       .slice(0, 5)
       .map(({ _score, ...b }) => ({ ...b, matchScore: _score }));
