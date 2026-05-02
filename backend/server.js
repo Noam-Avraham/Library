@@ -587,26 +587,39 @@ app.post('/api/scan-identify', async (req, res) => {
 
   try {
     const genAI = new GoogleGenerativeAI(geminiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'object',
+          properties: {
+            books: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  title:      { type: 'string' },
+                  author:     { type: 'string' },
+                  language:   { type: 'string', enum: ['he', 'en', 'other'] },
+                  confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
+                },
+                required: ['title', 'author', 'language', 'confidence'],
+              },
+            },
+          },
+          required: ['books'],
+        },
+      },
+    });
     const result = await model.generateContent([
       { inlineData: { mimeType: mediaType, data: imageBase64 } },
-      `Carefully scan the entire image and return a list of every book visible on the shelf.
-Scan left to right, top to bottom — do not miss any book, including those at the edges, at angles, or partially visible.
-
-Return JSON only (no markdown, no explanation):
-{"books":[{"title":"...","author":"...","language":"he|en|other","confidence":"high|medium|low"}]}
-
-Rules:
-- title: the title exactly as printed on the spine
-- author: the author's name, or empty string if not visible
-- language: the main script/language on the spine (he/en/other)
-- confidence: high=fully clear, medium=most of the title is clear, low=partial or uncertain
-- Report every book even if partial, angled, or at the edge — use low confidence for those
-- Hebrew text reads right to left
-- Do not translate or correct spelling errors`,
+      `זהה את כל הספרים הנראים בתמונה.
+סרוק משמאל לימין, מלמעלה למטה — כלול גם ספרים חלקיים, בזווית, או בקצוות.
+כתוב את הכותרת בדיוק כפי שמופיעה על גב הספר — אל תתרגם ואל תתקן שגיאות כתיב.
+אם שם המחבר אינו נראה, השאר ריק.`,
     ]);
-    const raw = result.response.text().trim().replace(/^```json\s*/i, '').replace(/```$/, '').trim();
-    res.json(JSON.parse(raw).books ?? []);
+    res.json(JSON.parse(result.response.text()).books ?? []);
   } catch (err) {
     res.status(500).json({ error: `Gemini error: ${err.message}` });
   }
