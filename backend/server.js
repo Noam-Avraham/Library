@@ -587,7 +587,17 @@ app.post('/api/scan-identify', async (req, res) => {
 
   try {
     const genAI = new GoogleGenerativeAI(geminiKey);
-    const model = genAI.getGenerativeModel({
+
+    // Step 1: free-text vision — no schema, no format constraints
+    const visionModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const visionResult = await visionModel.generateContent([
+      { inlineData: { mimeType: mediaType, data: imageBase64 } },
+      'תזהה לי את כל הספרים שרואים בתמונה',
+    ]);
+    const freeText = visionResult.response.text();
+
+    // Step 2: text-only structuring — convert the free text into JSON
+    const structureModel = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
       generationConfig: {
         responseMimeType: 'application/json',
@@ -612,14 +622,13 @@ app.post('/api/scan-identify', async (req, res) => {
         },
       },
     });
-    const result = await model.generateContent([
-      { inlineData: { mimeType: mediaType, data: imageBase64 } },
-      `זהה את כל הספרים הנראים בתמונה.
-סרוק משמאל לימין, מלמעלה למטה — כלול גם ספרים חלקיים, בזווית, או בקצוות.
-כתוב את הכותרת בדיוק כפי שמופיעה על גב הספר — אל תתרגם ואל תתקן שגיאות כתיב.
-אם שם המחבר אינו נראה, השאר ריק.`,
-    ]);
-    res.json(JSON.parse(result.response.text()).books ?? []);
+    const structureResult = await structureModel.generateContent(
+      `המר את רשימת הספרים הבאה למבנה JSON מובנה.
+עבור כל ספר: title=כותרת מדויקת, author=מחבר (ריק אם לא צוין), language=he/en/other, confidence=high/medium/low.
+
+${freeText}`
+    );
+    res.json(JSON.parse(structureResult.response.text()).books ?? []);
   } catch (err) {
     res.status(500).json({ error: `Gemini error: ${err.message}` });
   }
