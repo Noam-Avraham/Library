@@ -71,7 +71,7 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
                 onClick={e => e.stopPropagation()}
               />
             ) : (
-              <p className="text-xs sm:text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{identified.title}</p>
+              <p className="text-xs sm:text-sm font-semibold line-clamp-2" style={{ color: '#f5e6cc' }}>{identified.title}</p>
             )}
             {identified.language === 'en' && !editMode && (
               <span className="text-xs px-1 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)', color: '#94a3b8' }}>EN</span>
@@ -121,7 +121,7 @@ function BookResultRow({ item, source, onSourceChange, selectedMatch, onMatchCha
             )}
             <div className="flex-1 min-w-0" dir="rtl">
               <p className="text-xs mb-0.5" style={{ color: mq.color }}>{mq.label}</p>
-              <p className="text-xs sm:text-sm font-semibold truncate" style={{ color: '#f5e6cc' }}>{best.title}</p>
+              <p className="text-xs sm:text-sm font-semibold line-clamp-2" style={{ color: '#f5e6cc' }}>{best.title}</p>
               {best.author && (
                 <p className="text-xs mt-0.5 truncate" style={{ color: '#94a3b8' }}>{best.author}</p>
               )}
@@ -175,13 +175,14 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
   const [editMode, setEditMode]         = useState(false);
   const [editedTitles, setEditedTitles] = useState({});
   const [editedAuthors, setEditedAuthors] = useState({});
+  const [showPhoto, setShowPhoto]       = useState(false);
   const fileRef = useRef();
 
   const reset = () => {
     setPhase('upload'); setImagePreview(null); setImageBase64(null);
     setResults([]); setSelected({}); setMatchOverride({});
     setError(''); setAdding(false); setCustomLocation('');
-    setEditMode(false); setEditedTitles({}); setEditedAuthors({});
+    setEditMode(false); setEditedTitles({}); setEditedAuthors({}); setShowPhoto(false);
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -452,6 +453,7 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                       <p className="text-sm font-medium" style={{ color: '#f5e6cc' }}>גרור תמונה לכאן או לחץ לבחירה</p>
                       <p className="text-xs" style={{ color: '#6b7280' }}>תמונת מדף ספרים — יזוהו ספרים אוטומטית</p>
                       <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>שימו לב שהאיכות טובה ושניתן לראות את הכותרת</p>
+                      <p className="text-xs mt-0.5 font-medium" style={{ color: '#d97706' }}>מומלץ לצלם לכל היותר 10 ספרים בכל פעם</p>
                       <p className="text-xs mt-0.5" style={{ color: '#6b7280' }}>גודל מקסימלי: 20MB</p>
                     </>
                   )}
@@ -525,11 +527,19 @@ export default function ShelfScanner({ open, onClose, familyMembers, onBulkAdd, 
                         </button>
                         <button className="text-xs px-2 py-1 flex items-center gap-1"
                           style={{ color: '#94a3b8', border: '1px solid rgba(255,255,255,0.12)' }}
+                          onClick={() => setShowPhoto(v => !v)}>📷</button>
+                        <button className="text-xs px-2 py-1 flex items-center gap-1"
+                          style={{ color: '#94a3b8', border: '1px solid rgba(255,255,255,0.12)' }}
                           onClick={() => setEditMode(true)}>✏️ ערוך</button>
                       </>
                     )}
                   </div>
                 </div>
+
+                {/* Photo preview toggle */}
+                {showPhoto && imagePreview && (
+                  <img src={imagePreview} alt="תמונה מקורית" className="w-full max-h-64 object-contain" />
+                )}
 
                 {/* Instructions */}
                 <div className="flex flex-col gap-1 px-1 py-2" dir="rtl"

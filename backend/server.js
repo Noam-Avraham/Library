@@ -595,6 +595,7 @@ app.post('/api/scan-identify', async (req, res) => {
       'תזהה לי את כל הספרים שרואים בתמונה',
     ]);
     const freeText = visionResult.response.text();
+    const bookCount = (freeText.match(/^\s*\d+[\.\)]/gm) ?? []).length || 'unknown';
 
     // Step 2: text-only structuring — convert the free text into JSON
     const structureModel = genAI.getGenerativeModel({
@@ -623,7 +624,8 @@ app.post('/api/scan-identify', async (req, res) => {
       },
     });
     const structureResult = await structureModel.generateContent(
-      `המר את רשימת הספרים הבאה למבנה JSON מובנה.
+      `הרשימה הבאה מכילה בדיוק ${bookCount} ספרים. המר אותה ל-JSON — בדיוק ${bookCount} פריטים, לא פחות ולא יותר.
+אל תוסיף ספרים שלא מופיעים ברשימה. אל תמציא.
 עבור כל ספר: title=כותרת מדויקת, author=מחבר (ריק אם לא צוין), language=he/en/other, confidence=high/medium/low.
 
 ${freeText}`
