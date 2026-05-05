@@ -1,8 +1,35 @@
+import React from 'react';
 import { motion } from 'framer-motion';
 import { LIBRARY } from '../data/config.js';
 
-export default function Header({ onAddClick, onScanClick, onNextBookClick, activeTab, onTabChange }) {
+function GuestAlert() {
   return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: 'rgba(0,0,0,0.6)' }}
+      dir="rtl"
+    >
+      <div className="rounded-xl p-6 max-w-xs w-full text-center shadow-2xl" style={{ background: '#1e3a5f', border: '1px solid rgba(180,130,30,0.4)' }}>
+        <div className="text-3xl mb-3">🔒</div>
+        <p className="font-semibold mb-1" style={{ color: '#f5e6cc' }}>תכונת AI</p>
+        <p className="text-sm" style={{ color: '#94a3b8' }}>יש להתחבר עם סיסמה כדי להשתמש בתכונה זו.</p>
+        <p className="text-xs mt-3" style={{ color: '#64748b' }}>רענן את הדף כדי להתחבר מחדש.</p>
+      </div>
+    </div>
+  );
+}
+
+export default function Header({ onAddClick, onScanClick, onNextBookClick, activeTab, onTabChange, isAuthenticated }) {
+  const [showGuestAlert, setShowGuestAlert] = React.useState(false);
+
+  const handleAIClick = (handler) => {
+    if (!isAuthenticated) { setShowGuestAlert(true); setTimeout(() => setShowGuestAlert(false), 2500); return; }
+    handler();
+  };
+
+  return (
+    <>
+    {showGuestAlert && <GuestAlert />}
     <header
       style={{
         background: 'linear-gradient(135deg, #1a1040 0%, #2d1b69 25%, #1e3a5f 65%, #0f2744 100%)',
@@ -32,22 +59,24 @@ export default function Header({ onAddClick, onScanClick, onNextBookClick, activ
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}
-            onClick={onNextBookClick}
+            onClick={() => handleAIClick(onNextBookClick)}
             className="font-semibold px-2 sm:px-4 py-2 sm:py-2.5 shadow-lg transition-colors text-xs sm:text-sm"
-            style={{ background: 'rgba(180,130,30,0.2)', border: '1px solid rgba(180,130,30,0.5)', color: '#f5e6cc' }}
+            style={{ background: 'rgba(180,130,30,0.2)', border: '1px solid rgba(180,130,30,0.5)', color: isAuthenticated ? '#f5e6cc' : '#64748b' }}
           >
+            {!isAuthenticated && <span className="mr-1">🔒</span>}
             <span className="hidden sm:inline">מה הספר הבא שלי?</span>
             <span className="sm:hidden">הספר הבא</span>
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}
-            onClick={onScanClick}
+            onClick={() => handleAIClick(onScanClick)}
             className="font-semibold px-2 sm:px-4 py-2 sm:py-2.5 shadow-lg transition-colors text-xs sm:text-sm"
-            style={{ background: 'rgba(180,130,30,0.2)', border: '1px solid rgba(180,130,30,0.5)', color: '#f5e6cc' }}
+            style={{ background: 'rgba(180,130,30,0.2)', border: '1px solid rgba(180,130,30,0.5)', color: isAuthenticated ? '#f5e6cc' : '#64748b' }}
           >
-            <span className="hidden sm:inline">📷 סרוק מדף</span>
-            <span className="sm:hidden">📷</span>
+            {!isAuthenticated ? '🔒' : <span className="hidden sm:inline">📷 </span>}
+            <span className="hidden sm:inline">סרוק מדף</span>
+            <span className="sm:hidden">{isAuthenticated ? '📷' : '🔒'}</span>
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -83,5 +112,6 @@ export default function Header({ onAddClick, onScanClick, onNextBookClick, activ
         ))}
       </div>
     </header>
+    </>
   );
 }

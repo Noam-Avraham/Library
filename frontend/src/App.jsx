@@ -13,6 +13,7 @@ import BookReviewsModal from './components/BookReviewsModal.jsx';
 import NextBookModal from './components/NextBookModal.jsx';
 import ShelfScanner from './components/ShelfScanner.jsx';
 import LoansList from './components/LoansList.jsx';
+import LoginScreen from './components/LoginScreen.jsx';
 
 const QUOTES = [
   { text: 'אם תאכל שלוש ארוחות ביום תהיה שמן. אם תקרא שלושה ספרים ביום תהיה חכם.', author: 'שמעון פרס' },
@@ -26,6 +27,27 @@ const QUOTE = QUOTES[Math.floor(Math.random() * QUOTES.length)];
 const INITIAL_FILTERS = { search: '', owner: '', status: '' };
 
 export default function App() {
+  // auth: null = show login, false = guest, string = token (or 'no-auth' when disabled)
+  const [authToken, setAuthToken] = useState(() => sessionStorage.getItem('auth_token'));
+  // If we already have a stored token, skip the server status check
+  const [authChecked, setAuthChecked] = useState(() => !!sessionStorage.getItem('auth_token'));
+  const isAuthenticated = typeof authToken === 'string' && authToken.length > 0;
+
+  // On fresh load (no stored token) check if password is even configured
+  useEffect(() => {
+    if (authChecked) return;
+    fetch('/api/auth/status')
+      .then(r => r.json())
+      .then(({ authEnabled }) => {
+        if (!authEnabled) setAuthToken('no-auth');
+        setAuthChecked(true);
+      })
+      .catch(() => setAuthChecked(true));
+  }, [authChecked]);
+
+  const handleLogin = (token) => setAuthToken(token);
+  const handleGuest = () => setAuthToken(false);
+
   const [books, setBooks]               = useState([]);
   const [familyMembers, setFamilyMembers] = useState([]);
   const [filters, setFilters]           = useState(INITIAL_FILTERS);
@@ -109,14 +131,21 @@ export default function App() {
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  if (!authChecked) return null; // brief flash prevention
+
+  if (authToken === null || authToken === undefined) {
+    return <LoginScreen onLogin={handleLogin} onGuest={handleGuest} />;
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f5e6cc' }}>
       <Header
         onAddClick={() => setAddOpen(true)}
         onScanClick={() => setScanOpen(true)}
         onNextBookClick={() => setNextBookOpen(true)}
-activeTab={activeTab}
+        activeTab={activeTab}
         onTabChange={setActiveTab}
+        isAuthenticated={isAuthenticated}
       />
 
       {activeTab === 'stats'   && <StatsPage />}

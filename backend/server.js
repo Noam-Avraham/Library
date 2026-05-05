@@ -6,12 +6,69 @@ const axios = require('axios');
 const Anthropic = require('@anthropic-ai/sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const rateLimit = require('express-rate-limit');
+const crypto = require('crypto');
 const { init, run, get, all } = require('./db');
 
 const app = express();
 app.disable('x-powered-by');
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+const TOKEN_SECRET = crypto.randomBytes(32).toString('hex');
+const TOKEN_TTL    = 24 * 60 * 60 * 1000; // 24 hours
+
+function verifyPassword(password) {
+  const stored = process.env.APP_PASSWORD_HASH;
+  if (!stored) return false;
+  const [salt, hash] = stored.split(':');
+  if (!salt || !hash) return false;
+  try {
+    const attempt = crypto.scryptSync(password, salt, 64).toString('hex');
+    return crypto.timingSafeEqual(Buffer.from(attempt, 'hex'), Buffer.from(hash, 'hex'));
+  } catch { return false; }
+}
+
+function createToken() {
+  const payload = Buffer.from(JSON.stringify({ exp: Date.now() + TOKEN_TTL })).toString('base64url');
+  const sig = crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('hex');
+  return `${payload}.${sig}`;
+}
+
+function verifyToken(token) {
+  if (!token) return false;
+  const dot = token.lastIndexOf('.');
+  if (dot < 0) return false;
+  const payload = token.slice(0, dot);
+  const sig     = token.slice(dot + 1);
+  const expected = crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('hex');
+  if (sig.length !== expected.length) return false;
+  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return false;
+  try {
+    const { exp } = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    return Date.now() < exp;
+  } catch { return false; }
+}
+
+function requireAuth(req, res, next) {
+  if (!process.env.APP_PASSWORD_HASH) return next(); // auth not configured
+  const token = req.headers['x-auth-token'];
+  if (!verifyToken(token)) {
+    return res.status(401).json({ error: 'נדרשת התחברות לשימוש בתכונות AI' });
+  }
+  next();
+}
+
+app.post('/api/auth/login', (req, res) => {
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ error: 'סיסמה נדרשת' });
+  if (!verifyPassword(password)) return res.status(401).json({ error: 'סיסמה שגויה' });
+  res.json({ token: createToken() });
+});
+
+app.get('/api/auth/status', (_req, res) => {
+  res.json({ authEnabled: !!process.env.APP_PASSWORD_HASH });
+});
 
 const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -21,6 +78,10 @@ const aiLimiter = rateLimit({
 app.use('/api/scan-shelf',    aiLimiter);
 app.use('/api/scan-identify', aiLimiter);
 app.use('/api/next-book',     aiLimiter);
+app.use('/api/scan-shelf',    requireAuth);
+app.use('/api/scan-identify', requireAuth);
+app.use('/api/scan-enrich',   requireAuth);
+app.use('/api/next-book',     requireAuth);
 
 const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes';
 const NLI_API          = 'https://api.nli.org.il/openlibrary/search';

@@ -18,6 +18,7 @@ A full-stack web app for managing a family book collection — track ownership, 
 | **Translator field** | Books can store a translator name alongside author |
 | **Wrong-location indicator** | Orange stripe on a book's spine when it's not at the owner's home |
 | **Statistics** | Charts for collection breakdown by owner, genre, status |
+| **Authentication** | Shared password gate on every page load; guest mode allowed but AI features locked |
 
 ---
 
@@ -151,6 +152,8 @@ node backend/manage-family.js
 ```
 It lists current members, lets you add or remove by name, and writes directly to `library.db`. No restart needed.
 
+> `api.addFamilyMember` and `api.deleteFamilyMember` are exported from `frontend/src/api/index.js` and backed by REST endpoints, but are not wired to any UI component — family management is intentionally CLI-only.
+
 **Add more reviewers**
 Add a new entry to `reviewers`. Pick a unique color from the palette above.
 
@@ -198,6 +201,8 @@ The UI shows two side-by-side panels per book: what Gemini read (📷) and the b
 
 The AI prompt is versioned in `backend/scanner-prompt-versions.md` to track improvements over time.
 
+> **Legacy endpoint:** `POST /api/scan-shelf` (backend) and `api.scanShelf` (frontend `api/index.js`) perform both phases in a single blocking call. They are intentionally kept as a rollback option but are not called anywhere in the UI — the two-phase flow above is the only active implementation.
+
 ### Security
 
 | Threat | Protection |
@@ -206,6 +211,15 @@ The AI prompt is versioned in `backend/scanner-prompt-versions.md` to track impr
 | **Library-mode injection** | Claude only returns an index number, not book details. The actual book always comes from the DB. A bounds check rejects any out-of-range index. |
 | **Malicious `mediaType`** | Validated against a whitelist (`image/jpeg`, `image/png`, `image/gif`, `image/webp`) — anything else is rejected with 400 |
 | **SQL injection** | All database queries use parameterized statements (`?` placeholders) — user input is never interpreted as SQL |
+| **Unauthorized AI access** | All AI routes require authentication — unauthenticated requests are rejected |
+
+---
+
+## 🔐 Authentication
+
+The app shows a login screen on every fresh page load. Users can log in with the shared family password or continue as a guest (browsing only — AI features are locked for guests).
+
+The password can only be changed directly on the server — there is no UI for it.
 
 ---
 

@@ -1,8 +1,16 @@
 const BASE = '/api';
 
-async function request(path, opts = {}) {
+function authHeaders() {
+  const token = sessionStorage.getItem('auth_token');
+  return token ? { 'x-auth-token': token } : {};
+}
+
+async function request(path, opts = {}, withAuth = false) {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(withAuth ? authHeaders() : {}),
+    },
     ...opts,
   });
   if (!res.ok) {
@@ -32,13 +40,13 @@ export const api = {
 
   // Shelf scanner (legacy — kept for easy rollback)
   scanShelf: (imageBase64, mediaType, hint) =>
-    request('/scan-shelf', { method: 'POST', body: JSON.stringify({ imageBase64, mediaType, hint }) }),
+    request('/scan-shelf', { method: 'POST', body: JSON.stringify({ imageBase64, mediaType, hint }) }, true),
 
   // Shelf scanner v2 — two-phase
   scanIdentify: (imageBase64, mediaType) =>
-    request('/scan-identify', { method: 'POST', body: JSON.stringify({ imageBase64, mediaType }) }),
+    request('/scan-identify', { method: 'POST', body: JSON.stringify({ imageBase64, mediaType }) }, true),
   scanEnrich: (title, author) =>
-    request('/scan-enrich', { method: 'POST', body: JSON.stringify({ title, author }) }),
+    request('/scan-enrich', { method: 'POST', body: JSON.stringify({ title, author }) }, true),
 
   // Reviews
   getReviews: (bookId) => request(`/reviews?book_id=${bookId}`),
@@ -47,7 +55,7 @@ export const api = {
   deleteReview: (id) => request(`/reviews/${id}`, { method: 'DELETE' }),
 
   // Next book recommendation
-  getNextBook: (userName, mode = 'library') => request(`/next-book?user_name=${encodeURIComponent(userName)}&mode=${mode}`),
+  getNextBook: (userName, mode = 'library') => request(`/next-book?user_name=${encodeURIComponent(userName)}&mode=${mode}`, {}, true),
   addToWishlist: (title, author) => request('/books', { method: 'POST', body: JSON.stringify({ title, author, status: 'רשימת משאלות', owner: '', current_holder: '', location: 'רשימת משאלות' }) }),
 
   // Locations

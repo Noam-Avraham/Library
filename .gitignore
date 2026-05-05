@@ -10,6 +10,8 @@ hebrewlibraryAPI.txt
 # ── Personal guides (for your eyes only) ─────────────────────────────────────
 SelfLearning.md
 backend/scanner-prompt-versions.md
+i18n-audit.md
+next-session.md
 
 # ── Personal configuration (contains family names) ────────────────────────────
 # Copy family.config.example.json → family.config.json and edit it locally.
