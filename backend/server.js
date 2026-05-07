@@ -298,6 +298,9 @@ app.get('/api/search', async (req, res) => {
   res.json(results);
 });
 
+// To open all writes to guests: replace `requireAuth` with `(_,__,next)=>next()` on the line below
+const writeGuard = requireAuth;
+
 // ── Books CRUD ───────────────────────────────────────────────────────────────
 app.get('/api/books', (req, res) => {
   const { owner, status, search } = req.query;
@@ -312,7 +315,7 @@ app.get('/api/books', (req, res) => {
   res.json(all(sql, params));
 });
 
-app.post('/api/books', (req, res) => {
+app.post('/api/books', writeGuard, (req, res) => {
   const { title, author, translator, thumbnailUrl, isbn, owner, current_holder, location, status, genre, description } = req.body;
   const id = run(
     `INSERT INTO books (title, author, translator, thumbnailUrl, isbn, owner, current_holder, location, status, genre, description)
@@ -324,7 +327,7 @@ app.post('/api/books', (req, res) => {
   res.status(201).json(get('SELECT * FROM books WHERE id = ?', [id]));
 });
 
-app.put('/api/books/:id', (req, res) => {
+app.put('/api/books/:id', writeGuard, (req, res) => {
   const { title, author, translator, thumbnailUrl, isbn, owner, current_holder, location, status, genre, description, borrowed_at } = req.body;
   run(
     `UPDATE books SET title=?, author=?, translator=?, thumbnailUrl=?, isbn=?, owner=?, current_holder=?, location=?, status=?, genre=?, description=?, borrowed_at=?
@@ -334,12 +337,12 @@ app.put('/api/books/:id', (req, res) => {
   res.json(get('SELECT * FROM books WHERE id = ?', [Number(req.params.id)]));
 });
 
-app.delete('/api/books/:id', (req, res) => {
+app.delete('/api/books/:id', writeGuard, (req, res) => {
   run('DELETE FROM books WHERE id = ?', [Number(req.params.id)]);
   res.json({ success: true });
 });
 
-app.post('/api/books/:id/transfer', (req, res) => {
+app.post('/api/books/:id/transfer', writeGuard, (req, res) => {
   const { current_holder, status, location, borrowed_at } = req.body;
   const resolvedStatus = status || 'מושאל';
   run('UPDATE books SET current_holder=?, status=?, location=?, borrowed_at=? WHERE id=?',
@@ -356,14 +359,14 @@ app.get('/api/locations', (req, res) => {
   res.json(all('SELECT DISTINCT location FROM books WHERE location IS NOT NULL AND location != \'\' ORDER BY location').map(r => r.location));
 });
 
-app.post('/api/family', (req, res) => {
+app.post('/api/family', writeGuard, (req, res) => {
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: 'Name required' });
   const id = run('INSERT OR IGNORE INTO family_members (name) VALUES (?)', [name.trim()]);
   res.status(201).json({ id, name: name.trim() });
 });
 
-app.delete('/api/family/:id', (req, res) => {
+app.delete('/api/family/:id', writeGuard, (req, res) => {
   run('DELETE FROM family_members WHERE id = ?', [Number(req.params.id)]);
   res.json({ success: true });
 });
@@ -393,7 +396,7 @@ app.get('/api/reviews/summary', (req, res) => {
   res.json(rows);
 });
 
-app.post('/api/reviews', (req, res) => {
+app.post('/api/reviews', writeGuard, (req, res) => {
   const { book_id, user_name, rating, review_text } = req.body;
   if (!book_id || !user_name) return res.status(400).json({ error: 'book_id and user_name required' });
 
@@ -413,7 +416,7 @@ app.post('/api/reviews', (req, res) => {
   res.status(201).json(get('SELECT * FROM reviews WHERE id = ?', [id]));
 });
 
-app.delete('/api/reviews/:id', (req, res) => {
+app.delete('/api/reviews/:id', writeGuard, (req, res) => {
   run('DELETE FROM reviews WHERE id = ?', [Number(req.params.id)]);
   res.json({ success: true });
 });
