@@ -14,6 +14,7 @@ async function request(path, opts = {}, withAuth = false) {
     ...opts,
   });
   if (!res.ok) {
+    if (res.status === 401) window.dispatchEvent(new CustomEvent('unauthorized'));
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error || res.statusText);
   }
@@ -27,10 +28,10 @@ export const api = {
     Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, v); });
     return request(`/books?${params}`);
   },
-  addBook: (data) => request('/books', { method: 'POST', body: JSON.stringify(data) }),
-  updateBook: (id, data) => request(`/books/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteBook: (id) => request(`/books/${id}`, { method: 'DELETE' }),
-  transferBook: (id, data) => request(`/books/${id}/transfer`, { method: 'POST', body: JSON.stringify(data) }),
+  addBook: (data) => request('/books', { method: 'POST', body: JSON.stringify(data) }, true),
+  updateBook: (id, data) => request(`/books/${id}`, { method: 'PUT', body: JSON.stringify(data) }, true),
+  deleteBook: (id) => request(`/books/${id}`, { method: 'DELETE' }, true),
+  transferBook: (id, data) => request(`/books/${id}/transfer`, { method: 'POST', body: JSON.stringify(data) }, true),
 
   // Unified book search (NLI + Google)
   searchBooks: (q) => request(`/search?q=${encodeURIComponent(q)}`),
@@ -51,18 +52,18 @@ export const api = {
   // Reviews
   getReviews: (bookId) => request(`/reviews?book_id=${bookId}`),
   getReviewsSummary: () => request('/reviews/summary'),
-  saveReview: (data) => request('/reviews', { method: 'POST', body: JSON.stringify(data) }),
-  deleteReview: (id) => request(`/reviews/${id}`, { method: 'DELETE' }),
+  saveReview: (data) => request('/reviews', { method: 'POST', body: JSON.stringify(data) }, true),
+  deleteReview: (id) => request(`/reviews/${id}`, { method: 'DELETE' }, true),
 
   // Next book recommendation
   getNextBook: (userName, mode = 'library') => request(`/next-book?user_name=${encodeURIComponent(userName)}&mode=${mode}`, {}, true),
-  addToWishlist: (title, author) => request('/books', { method: 'POST', body: JSON.stringify({ title, author, status: 'רשימת משאלות', owner: '', current_holder: '', location: 'רשימת משאלות' }) }),
+  addToWishlist: (title, author) => request('/books', { method: 'POST', body: JSON.stringify({ title, author, status: 'רשימת משאלות', owner: '', current_holder: '', location: 'רשימת משאלות' }) }, true),
 
   // Locations
   getLocations: () => request('/locations'),
 
   // Family
   getFamily: () => request('/family'),
-  addFamilyMember: (name) => request('/family', { method: 'POST', body: JSON.stringify({ name }) }),
-  deleteFamilyMember: (id) => request(`/family/${id}`, { method: 'DELETE' }),
+  addFamilyMember: (name) => request('/family', { method: 'POST', body: JSON.stringify({ name }) }, true),
+  deleteFamilyMember: (id) => request(`/family/${id}`, { method: 'DELETE' }, true),
 };

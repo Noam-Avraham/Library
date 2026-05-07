@@ -96,6 +96,7 @@ export default function ReviewModal({ open, book, existingReview, onClose, onSav
       await api.deleteReview(existingData.id);
       onSaved();
       onClose();
+    } catch {
     } finally {
       setDeleting(false);
     }
@@ -124,6 +125,7 @@ export default function ReviewModal({ open, book, existingReview, onClose, onSav
       });
       onSaved();
       onClose();
+    } catch {
     } finally {
       setSaving(false);
     }

@@ -14,6 +14,7 @@ import NextBookModal from './components/NextBookModal.jsx';
 import ShelfScanner from './components/ShelfScanner.jsx';
 import LoansList from './components/LoansList.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
+import UnauthorizedModal from './components/UnauthorizedModal.jsx';
 
 const QUOTES = [
   { text: 'אם תאכל שלוש ארוחות ביום תהיה שמן. אם תקרא שלושה ספרים ביום תהיה חכם.', author: 'שמעון פרס' },
@@ -48,6 +49,12 @@ export default function App() {
   const handleLogin = (token) => setAuthToken(token);
   const handleGuest = () => setAuthToken(false);
 
+  useEffect(() => {
+    const show = () => setUnauthorizedOpen(true);
+    window.addEventListener('unauthorized', show);
+    return () => window.removeEventListener('unauthorized', show);
+  }, []);
+
   const [books, setBooks]               = useState([]);
   const [familyMembers, setFamilyMembers] = useState([]);
   const [filters, setFilters]           = useState(INITIAL_FILTERS);
@@ -56,6 +63,7 @@ export default function App() {
   const [sortBy,   setSortBy]           = useState('location');
   const [activeTab, setActiveTab]       = useState('library');
 
+  const [unauthorizedOpen, setUnauthorizedOpen] = useState(false);
   const [addOpen,       setAddOpen]       = useState(false);
   const [scanOpen,      setScanOpen]      = useState(false);
   const [transferBook,  setTransferBook]  = useState(null);
@@ -231,6 +239,7 @@ export default function App() {
         onClose={() => setReviewBook(null)}
         onSaved={() => setReviewBook(null)}
       />
+      <UnauthorizedModal open={unauthorizedOpen} onClose={() => setUnauthorizedOpen(false)} />
     </div>
   );
 }
